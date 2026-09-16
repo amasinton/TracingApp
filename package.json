@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +26,10 @@
   "dependencies": {
     "konva": "^10.3.1",
     "tabulator-tables": "^6.5.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amasinton/TracingApp.git"   
+  },
+  "homepage": "http://amasinton.github.io/TracingApp"
 }
