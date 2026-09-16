@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tracing Tools</title>
+    <!-- <link rel="stylesheet" href="./style.css"> -->
+</head>
+<body>
+    <!-- <script type="module" src="index.js"></script> -->
+    <div id="load_image">
+        <label for="file_input">Load Background Image: </label>
+        <input type="file" id="file_input" name="file_input" accept="image/*">
+    </div>
+
+    <div class="drawing_container">
+        <div class="konva_column" id="konvatest"></div>
+        <div class="layers_column" id="groupsVis">Glyphs</div>
+    </div>
+    
+    <div id="lineinfo"></div>
+
+    <div id="grouping">
+        <button id="groupbutton" hidden>Create Glyph</button>
+        <input type="text" id="groupidinput" placeholder="Group ID" hidden>
+        <button id="submitgroupid" hidden>Submit Glyph</button>
+    </div>
+
+    <!-- <button id="newrow">Create New Row</button> -->
+   
+    <div id="save_file">
+        <label for="reportchildren">Save File: </label>
+        <button id="reportchildren" name="reportchildren">Save</button>
+    </div>
+    
+    <div id="file_load">
+        <label for="jsonFileInput">Load Saved File: </label>
+        <input type="file" id="jsonFileInput" name="jsonFileInput" accept=".geojson, .json, text/plain" />
+    </div>
+    
+    <div id="infotable" style="width: 90%""></div>
+</body>
+</html>
