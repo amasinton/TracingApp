@@ -1,14 +1,20 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
-  mode: 'development', // Sets the environment to development mode
+  mode: isProduction ? 'production' : 'development',
   entry: './src/index.js', // The entry point of your application
   module: {
     rules: [
       {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'], // or MiniCssExtractPlugin.loader
+        test: /\.css$/i,
+        use: [
+          isProduction ? MiniCssExtractPlugin.loader : 'style-loader', 'css-loader',
+        ],
+        // use: ['style-loader', 'css-loader'], // or MiniCssExtractPlugin.loader
       },
     ],
   },
@@ -31,5 +37,6 @@ module.exports = {
     new HtmlWebpackPlugin({
         template: './src/index.html', // Uses our custom HTML file as a template
     }),
+    ...(isProduction ? [new MiniCssExtractPlugin({ filename: 'styles.css' })] : []),
   ],
 };

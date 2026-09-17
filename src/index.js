@@ -1,21 +1,18 @@
+import "bootswatch/dist/darkly/bootstrap.min.css";
+// import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
+import 'bootstrap';
 import Konva from 'konva';
 import {TabulatorFull as Tabulator} from 'tabulator-tables';
-import "tabulator-tables/dist/css/tabulator.min.css";
+// import "tabulator-tables/dist/css/tabulator.min.css";
+import "tabulator-tables/dist/css/tabulator_bootstrap5.min.css";
 import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren } from './saveload.js';
 
-// create tool select
-const select = document.createElement('select');
-select.innerHTML = `
-  <option value="brush">Brush</option>
-  <option value="eraser">Eraser</option>
-`;
-document.body.appendChild(select);
 
 const konvaDiv = document.querySelector('#konvatest');
 const rect = konvaDiv.getBoundingClientRect();
 const width = rect.width;
-const height = window.innerHeight - 200;
+const height = window.innerHeight - 250;
 
 Konva.dragButtons = [2];
 
@@ -76,6 +73,7 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 		userUploadedImage.contrast(0);
 
 	  	const sliderLabel = document.createElement('label');
+		sliderLabel.classList.add("ms-3", "me-3");
 		sliderLabel.htmlFor = 'contrast_slider';
 		sliderLabel.textContent = 'Contrast: ';
 
@@ -136,6 +134,18 @@ stage.on('wheel', (e) => {
 });
 
 // ** Drawing
+// // create tool select
+// const select = document.createElement('select');
+// select.innerHTML = `
+//   <option value="brush">Brush</option>
+//   <option value="eraser">Eraser</option>
+// `;
+// document.body.appendChild(select);
+
+// select.addEventListener('change', function () {
+// 	mode = select.value;
+// });
+
 let isPaint = false;
 let mode = 'brush';
 let lastLine;
@@ -340,9 +350,6 @@ function cleanupEmptyGroups ()
 	}
 }
 
-select.addEventListener('change', function () {
-	mode = select.value;
-});
 
 // ** Line selection
 const lineInfo = document.getElementById('lineinfo');

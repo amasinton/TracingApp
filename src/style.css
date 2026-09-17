@@ -16,3 +16,7 @@ canvas:focus-visible {
 .layers_column {
   flex: 1;
 }
+
+.save_load_child {
+  display: inline-block;
+}
