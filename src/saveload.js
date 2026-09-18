@@ -1,8 +1,18 @@
 import Konva from "konva";
 import { addCheckbox } from './index.js';
+// import { clean } from "gh-pages";
+
+function formatName () {
+  const userFilename = document.getElementById('nameTextInput').value;
+  const cleanedFilename = userFilename
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, "_");
+  return cleanedFilename;
+}
 
 export function saveLoadReportLayerChildren (sentLayer, sentTable) {
   console.log("Children Report:");
+
   let geoJsonObject = {
     type: "FeatureCollection",
     features: []
@@ -73,7 +83,8 @@ export function saveLoadReportLayerChildren (sentLayer, sentTable) {
   // const geoString = JSON.stringify(geoJsonObject, null, 2);
   // console.log(geoString);
 
-  downloadGeoJSON(geoJsonObject, "my-glyphs.geojson");
+  const nameComplete = formatName() + ".geojson";
+  downloadGeoJSON(geoJsonObject, nameComplete);
 }
 
 export function checkTableForGroupID(sentRows, sentID) {
@@ -118,6 +129,12 @@ function downloadGeoJSON(geoJsonObject, filename = "data.geojson") {
   downloadAnchor.click();
   downloadAnchor.remove();
 }  
+
+export function exportCSV (sentTable)
+{
+  const completeName = formatName() + ".csv";
+  sentTable.download("csv", completeName);
+}
 
 export function loadSavedJSON (sentJSON, sentLayer, sentTable)
 {

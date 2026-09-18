@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Tracing Tools</title>
-    <!-- <link rel="stylesheet" href="./style.css"> -->
 </head>
 <body class="p-3">
-    <!-- <script type="module" src="index.js"></script> -->
-    <div id="load_image">
+    <div class="d-flex align-items-center gap-2" id="load_image">
         <label for="file_input">Load Background Image: </label>
         <input class="btn btn-primary" type="file" id="file_input" name="file_input" accept="image/*">
     </div>
@@ -37,8 +35,13 @@
             <label for="reportchildren">Save File: </label>
             <button id="reportchildren" name="reportchildren">Save</button>
         </div>
+
+        <div class="save_load_child p-2" id="save_csv">
+            <label for="reportcsv">Export .csv: </label>
+            <button id="reportcsv" name="reportcsv">Export</button>
+        </div>
     </div>
     
-    <div class="table table-dark table-striped" id="infotable" style="width: 100%""></div>
+    <div class="table table-dark table-striped pb-5" id="infotable" style="width: 100%"></div>
 </body>
 </html>

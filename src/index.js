@@ -6,13 +6,15 @@ import Konva from 'konva';
 import {TabulatorFull as Tabulator} from 'tabulator-tables';
 // import "tabulator-tables/dist/css/tabulator.min.css";
 import "tabulator-tables/dist/css/tabulator_bootstrap5.min.css";
-import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren } from './saveload.js';
+import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren, exportCSV } from './saveload.js';
 
 
 const konvaDiv = document.querySelector('#konvatest');
 const rect = konvaDiv.getBoundingClientRect();
 const width = rect.width;
-const height = window.innerHeight - 250;
+const height = window.innerHeight * 0.65;
+console.log(window.innerHeight.toString(5));
+console.log(height.toString(5));
 
 Konva.dragButtons = [2];
 
@@ -93,7 +95,14 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 			userUploadedImage.contrast(value);
 		});
 
+		const nameTextInput = document.createElement('input');
+		nameTextInput.type = 'text';
+		nameTextInput.classList.add("form-control", "w-auto");
+		nameTextInput.id = 'nameTextInput';
+		nameTextInput.placeholder = "File Name";
+
 		const imageLoadDiv = document.getElementById("load_image");
+		imageLoadDiv.appendChild(nameTextInput);
 		imageLoadDiv.appendChild(sliderLabel);
 		imageLoadDiv.appendChild(slider);
 	};
@@ -253,6 +262,7 @@ function createLineGroup () {
 	groupButton.hidden = true;
 	groupIDInput.hidden = true;
 	groupIDSubmit.hidden = true;
+	lineInfo.innerHTML = "No selection...";
 }
 
 export function addCheckbox(labelText, value) {
@@ -383,13 +393,13 @@ stage.on('click tap', function (e) {
 		lineInfo.innerHTML = e.target.name();
 		const isInGroup = e.target.getParent() && e.target.getParent().getClassName() === "Group";
 		if (isInGroup) {
-			lineInfo.innerHTML = e.target.name() + " is part of a group id: " + e.target.getParent().id();
+			lineInfo.innerHTML = e.target.name() + " is part of Glyph: " + e.target.getParent().id();
 			groupButton.hidden = true;
 			groupIDInput.hidden = true;
 			groupIDSubmit.hidden = true;
 		}
 		else {
-			lineInfo.innerHTML = e.target.name() + " is not in a group.";
+			lineInfo.innerHTML = e.target.name() + " is not part of a Glyph.";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
 			groupIDSubmit.hidden = true;
@@ -421,32 +431,33 @@ stage.on('click tap', function (e) {
 
 // ** Data table
 // const blankData = Array(1).fill({});
-
+const tableHeight = () => Math.floor(window.innerHeight * 0.25);
 var table = new Tabulator("#infotable", {
     // data: blankData,
 	layout: "fitData",
+	height: tableHeight(),
     columns: [
 		{ title: "Locality", field: "locality", editor: "input" },
-		{ title: "Boulder_No", field: "boulder_no", editor: "input" },
-		{ title: "Panel", field: "panel", editor: "input" },
-        { title: "Petro_No", field: "petro_no", editor: "input" },
-		{ title: "Orig_No", field: "orig_no", editor: "input" },
-        { title: "Code", field: "code", editor: "input" },
+		{ title: "Boulder ID", field: "boulder_no", editor: "input" },
+		{ title: "Panel ID", field: "panel", editor: "input" },
+        { title: "Petroglyph ID", field: "petro_no", editor: "input" },
+		{ title: "Other Glyph ID", field: "orig_no", editor: "input" },
+        { title: "Motif Code", field: "code", editor: "input" },
         { title: "Technique", field: "technique", editor: "input" },
         { title: "Intensity", field: "intensity", editor: "input" },
-		{ title: "Rock_Incrp", field: "rock_incrp", editor: "input" },
-		{ title: "Superimp", field: "superimp", editor: "input" },
-		{ title: "Varnish_Rank", field: "v_rank", editor: "input" },
+		{ title: "Rock Incorporation", field: "rock_incrp", editor: "input" },
+		{ title: "Superimposition", field: "superimp", editor: "input" },
+		{ title: "Varnish Rank", field: "v_rank", editor: "input" },
 		{ title: "Condition", field: "condition", editor: "input" },
-		{ title: "Varnish_Class", field: "v_class", editor: "input" },
+		{ title: "Varnish Class", field: "v_class", editor: "input" },
 		{ title: "Repecking", field: "repecking", editor: "input" },
-		{ title: "Repk_V_Rnk", field: "repk_v_rnk", editor: "input" },
-		{ title: "Repk_V_Cls", field: "repk_v_cls", editor: "input" },
-		{ title: "Date", field: "date", editor: "input" },
+		{ title: "Repk V Rank", field: "repk_v_rnk", editor: "input" },
+		{ title: "Repk V Class", field: "repk_v_cls", editor: "input" },
+		{ title: "Record Date", field: "date", editor: "input" },
 		{ title: "Recorder", field: "recorder", editor: "input" },
-		{ title: "Data_By", field: "data_by", editor: "input" },
+		{ title: "Data By", field: "data_by", editor: "input" },
 		{ title: "Comments", field: "comments", editor: "input" },
-		{ title: "Image_Name", field: "image_name", editor: "input" }
+		{ title: "Image Name", field: "image_name", editor: "input" }
     ],
 	addRowPos: "bottom"
 });
@@ -459,6 +470,9 @@ async function addNewRow (glyphID) {
 
 // const newRowButton = document.getElementById("newrow");
 // newRowButton.addEventListener("click", addNewRow);
+
+const exportCSVButton = document.getElementById("reportcsv");
+exportCSVButton.addEventListener("click", () => exportCSV(table));
 
 // ** Save prep
 const reportChildrenButton = document.getElementById("reportchildren");
