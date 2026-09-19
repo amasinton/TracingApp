@@ -71,6 +71,8 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 	  // 4. Free up memory by revoking the object URL
 	  URL.revokeObjectURL(localFileUrl);
 
+	  zoomToImage(userUploadedImage);
+
 		userUploadedImage.cache();
 		userUploadedImage.filters([Konva.Filters.Contrast]);
 		userUploadedImage.contrast(0);
@@ -108,6 +110,32 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 		imageLoadDiv.appendChild(slider);
 	};
 });
+
+function zoomToImage(sentImage) {
+	// 1. Get the sizes of both the stage and the image
+	const stageWidth = stage.width();
+	const stageHeight = stage.height();
+	
+	// Use getClientRect to account for image rotation, scaling, or offsets
+	const imageRect = sentImage.getClientRect();
+  
+	// 2. Calculate the ideal scale (choosing the smaller ratio to fit the whole image)
+	const scaleX = stageWidth / imageRect.width;
+	const scaleY = stageHeight / imageRect.height;
+	const newScale = Math.min(scaleX, scaleY);
+  
+	// 3. Calculate the new position to center the image
+	const newX = (stageWidth - imageRect.width * newScale) / 2 - imageRect.x * newScale;
+	const newY = (stageHeight - imageRect.height * newScale) / 2 - imageRect.y * newScale;
+  
+	// 4. Apply the transformations to the stage
+	stage.scale({ x: newScale, y: newScale });
+	stage.position({ x: newX, y: newY });
+	
+	// 5. Redraw the stage
+	stage.batchDraw();
+  }
+  
 
 // ** Zoom and pan to cursor
 const scaleBy = 1.01;
