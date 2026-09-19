@@ -6,15 +6,13 @@ import Konva from 'konva';
 import {TabulatorFull as Tabulator} from 'tabulator-tables';
 // import "tabulator-tables/dist/css/tabulator.min.css";
 import "tabulator-tables/dist/css/tabulator_bootstrap5.min.css";
-import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren, exportCSV } from './saveload.js';
+import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren, exportCSV, prepWorldFile, writeWorldFile } from './saveload.js';
 
 
 const konvaDiv = document.querySelector('#konvatest');
 const rect = konvaDiv.getBoundingClientRect();
 const width = rect.width;
 const height = window.innerHeight * 0.65;
-console.log(window.innerHeight.toString(5));
-console.log(height.toString(5));
 
 Konva.dragButtons = [2];
 
@@ -66,6 +64,7 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 	  layer.add(userUploadedImage);
 	  userUploadedImage.moveToBottom();
 	  layer.batchDraw();
+	  prepWorldFile(userUploadedImage);
 	  
 	  // 4. Free up memory by revoking the object URL
 	  URL.revokeObjectURL(localFileUrl);
@@ -474,6 +473,9 @@ async function addNewRow (glyphID) {
 const exportCSVButton = document.getElementById("reportcsv");
 exportCSVButton.addEventListener("click", () => exportCSV(table));
 
+const writeWorldButton = document.getElementById("reportworldfile");
+writeWorldButton.addEventListener("click", () => writeWorldFile(backgroundImagePath));
+
 // ** Save prep
 const reportChildrenButton = document.getElementById("reportchildren");
 reportChildrenButton.addEventListener("click", () => saveLoadReportLayerChildren(layer, table));
@@ -487,6 +489,14 @@ fileInput.addEventListener('change', (event) => {
   if (!file) {
     return;
   }
+
+	const nameTextInput = document.getElementById('nameTextInput');
+	if (nameTextInput)
+	{
+		const rawName = file.name;
+		const strippedName = rawName.split('.')[0];
+		nameTextInput.value = strippedName;
+	}
 
   const reader = new FileReader();
 

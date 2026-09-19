@@ -45,7 +45,9 @@ export function saveLoadReportLayerChildren (sentLayer, sentTable) {
           let childPoints = structuredClone(child.points());
           let pointsArray = [];
           for (let i = 0; i < childPoints.length; i += 2) {
-            const pointsSubArray = [childPoints[i+1], childPoints[i]];
+            // const pointsSubArray = [childPoints[i+1], childPoints[i]];
+            // const pointsSubArray = [childPoints[i], childPoints[i + 1]];
+            const pointsSubArray = [childPoints[i], childPoints[i + 1] * -1.0];
             pointsArray.push(pointsSubArray);
           }
           tempMultilinestring.geometry.coordinates.push(pointsArray);
@@ -136,6 +138,36 @@ export function exportCSV (sentTable)
   sentTable.download("csv", completeName);
 }
 
+let xImgCoord = 0.0;
+let yImgCoord = 0.0;
+export function prepWorldFile (sentImage)
+{
+  xImgCoord = sentImage.x();
+  yImgCoord = sentImage.y();  
+}
+
+export function writeWorldFile (sentImageFilename)
+{
+  const worldfileName = sentImageFilename + "w";
+
+  const xPixelMapUnits = 0.5;
+  const yImgRotation = 0.0;
+  const xImgRotation = 0.0;
+  const yPixelMapUnits = -0.5;
+
+  const worldfileContents = xPixelMapUnits.toString() + "\n" + yImgRotation.toString() + "\n" + xImgRotation.toString() + "\n" + yPixelMapUnits.toString() + "\n" + xImgCoord.toString() + "\n" + yImgCoord.toString();
+
+  const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(worldfileContents);
+  const downloadAnchor = document.createElement('a');
+  
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", worldfileName);
+  document.body.appendChild(downloadAnchor);
+  
+  downloadAnchor.click();
+  downloadAnchor.remove();
+}
+
 export function loadSavedJSON (sentJSON, sentLayer, sentTable)
 {
   const groupArray = sentJSON.features;
@@ -153,8 +185,12 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
       for (const coordPair of coordArray)
       {
         // console.log(coordPair);
-        tempCoords.push(coordPair[1]);
+        // tempCoords.push(coordPair[1]);
+        // tempCoords.push(coordPair[0]);
+        // tempCoords.push(coordPair[0]);
+        // tempCoords.push(coordPair[1]);
         tempCoords.push(coordPair[0]);
+        tempCoords.push(coordPair[1] * -1.0);
       }
       const tempLine = new Konva.Line({
         stroke: '#df4b26',
