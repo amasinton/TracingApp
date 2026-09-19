@@ -56,8 +56,10 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 		x: 0,
 		y: 0,
 		image: imgObj,
-		width: imgObj.width * 0.5, // Scaling down
-		height: imgObj.height * 0.5,
+		// width: imgObj.width * 0.5, // Scaling down
+		// height: imgObj.height * 0.5,
+		width: imgObj.width,
+		height: imgObj.height,
 		listening: false,
 	  });
   
@@ -171,7 +173,7 @@ stage.on('mousedown touchstart', function (e) {
 		const pos = stage.getRelativePointerPosition();
 		lastLine = new Konva.Line({
 			stroke: '#df4b26',
-			strokeWidth: 5,
+			strokeWidth: 10,
 			globalCompositeOperation:
 			mode === 'brush' ? 'source-over' : 'destination-out',
 			// round cap for smoother lines

@@ -150,10 +150,12 @@ export function writeWorldFile (sentImageFilename)
 {
   const worldfileName = sentImageFilename + "w";
 
-  const xPixelMapUnits = 0.5;
+  // const xPixelMapUnits = 0.5;
+  const xPixelMapUnits = 1.0;
   const yImgRotation = 0.0;
   const xImgRotation = 0.0;
-  const yPixelMapUnits = -0.5;
+  // const yPixelMapUnits = -0.5;
+  const yPixelMapUnits = -1.0;
 
   const worldfileContents = xPixelMapUnits.toString() + "\n" + yImgRotation.toString() + "\n" + xImgRotation.toString() + "\n" + yPixelMapUnits.toString() + "\n" + xImgCoord.toString() + "\n" + yImgCoord.toString();
 
@@ -194,7 +196,7 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
       }
       const tempLine = new Konva.Line({
         stroke: '#df4b26',
-        strokeWidth: 5,
+        strokeWidth: 10,
         lineCap: 'round',
         lineJoin: 'round',
         points: tempCoords,
