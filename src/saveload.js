@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { addCheckbox } from './index.js';
+import { scaleFactor, addCheckbox } from './index.js';
 // import { clean } from "gh-pages";
 
 function formatName () {
@@ -11,7 +11,7 @@ function formatName () {
 }
 
 export function saveLoadReportLayerChildren (sentLayer, sentTable) {
-  console.log("Children Report:");
+  // console.log("Children Report:");
 
   let geoJsonObject = {
     type: "FeatureCollection",
@@ -20,14 +20,14 @@ export function saveLoadReportLayerChildren (sentLayer, sentTable) {
   const layerChildren = sentLayer.getChildren();
   const tableRows = sentTable.getRows();
   layerChildren.forEach(node => {
-    console.log(node);
+    // console.log(node);
     if (node.name() == "Group")
     {
-      console.log ("Found a group!");
+      // console.log ("Found a group!");
       var matchingRow = checkTableForGroupID(tableRows, node.id());
       if (matchingRow != null){
         var matchingRowData = matchingRow.getData();
-        console.log("Found match! ID = " + matchingRowData.petro_no);
+        // console.log("Found match! ID = " + matchingRowData.petro_no);
 
         let tempMultilinestring = {
           type: "Feature",
@@ -47,7 +47,7 @@ export function saveLoadReportLayerChildren (sentLayer, sentTable) {
           for (let i = 0; i < childPoints.length; i += 2) {
             // const pointsSubArray = [childPoints[i+1], childPoints[i]];
             // const pointsSubArray = [childPoints[i], childPoints[i + 1]];
-            const pointsSubArray = [childPoints[i], childPoints[i + 1] * -1.0];
+            const pointsSubArray = [childPoints[i] / scaleFactor, (childPoints[i + 1] / scaleFactor) * -1.0];
             pointsArray.push(pointsSubArray);
           }
           tempMultilinestring.geometry.coordinates.push(pointsArray);
@@ -104,7 +104,7 @@ export function checkTableForGroupID(sentRows, sentID) {
 
 function checkCell (sentCellValue)
 {
-  console.log(sentCellValue);
+  // console.log(sentCellValue);
   if (sentCellValue == null || sentCellValue == undefined)
   {
     return "";
@@ -119,17 +119,23 @@ function addMultilinestring (sentGroup) {
   geoJsonObject.features.push({sentGroup});
 }
   
-//Saving in the Browser
+//Saving geoJSON in the Browser
 function downloadGeoJSON(geoJsonObject, filename = "data.geojson") {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geoJsonObject));
+  // const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geoJsonObject));
+  const dataStr = JSON.stringify(geoJsonObject);
+  const dataBlob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+
   const downloadAnchor = document.createElement('a');
-  
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", filename);
+  // downloadAnchor.setAttribute("href", dataStr);
+  // downloadAnchor.setAttribute("download", filename);
+  downloadAnchor.href = URL.createObjectURL(dataBlob);
+  downloadAnchor.download = filename;
+
   document.body.appendChild(downloadAnchor);
   
   downloadAnchor.click();
   downloadAnchor.remove();
+  setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 10000);
 }  
 
 export function exportCSV (sentTable)
@@ -160,14 +166,19 @@ export function writeWorldFile (sentImageFilename)
   const worldfileContents = xPixelMapUnits.toString() + "\n" + yImgRotation.toString() + "\n" + xImgRotation.toString() + "\n" + yPixelMapUnits.toString() + "\n" + xImgCoord.toString() + "\n" + yImgCoord.toString();
 
   const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(worldfileContents);
-  const downloadAnchor = document.createElement('a');
+  const dataBlob = new Blob([dataStr], { type: 'text/plain;charset=utf-8' });
   
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", worldfileName);
+  const downloadAnchor = document.createElement('a');
+  // downloadAnchor.setAttribute("href", dataStr);
+  // downloadAnchor.setAttribute("download", worldfileName);
+  downloadAnchor.href = URL.createObjectURL(dataBlob);
+  downloadAnchor.download = worldfileName;
+
   document.body.appendChild(downloadAnchor);
   
   downloadAnchor.click();
   downloadAnchor.remove();
+  setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 10000);
 }
 
 export function loadSavedJSON (sentJSON, sentLayer, sentTable)
@@ -175,7 +186,7 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
   const groupArray = sentJSON.features;
   for (const group of groupArray)
   {
-    console.log(group);
+    // console.log(group);
     const tempGroup = new Konva.Group({
       id: group.properties.petro_no,
       name: "Group"
@@ -186,13 +197,12 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
       const tempCoords = [];
       for (const coordPair of coordArray)
       {
-        // console.log(coordPair);
         // tempCoords.push(coordPair[1]);
         // tempCoords.push(coordPair[0]);
         // tempCoords.push(coordPair[0]);
         // tempCoords.push(coordPair[1]);
-        tempCoords.push(coordPair[0]);
-        tempCoords.push(coordPair[1] * -1.0);
+        tempCoords.push(coordPair[0] * scaleFactor);
+        tempCoords.push((coordPair[1] * scaleFactor) * -1.0);
       }
       const tempLine = new Konva.Line({
         stroke: '#df4b26',

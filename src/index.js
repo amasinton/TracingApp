@@ -14,9 +14,9 @@ const rect = konvaDiv.getBoundingClientRect();
 const width = rect.width;
 const height = window.innerHeight * 0.65;
 
+Konva.hitOnDragEnabled = true;
 Konva.dragButtons = [2];
 
-// first we need Konva core things: stage and layer
 const stage = new Konva.Stage({
   container: 'konvatest',
   width: width,
@@ -36,8 +36,9 @@ stage.container().addEventListener('blur', () => {
 const layer = new Konva.Layer();
 stage.add(layer);
 
-// ** Load Background image
+// ** Load Background image - adapted from example code by google AI
 let backgroundImagePath = "";
+export let scaleFactor = 1.0;
 document.getElementById('file_input').addEventListener('change', function (e) {
 	const file = e.target.files[0];
 	if (!file) return;
@@ -52,14 +53,32 @@ document.getElementById('file_input').addEventListener('change', function (e) {
   
 	imgObj.onload = function () {
 	  // 3. Create the Konva shape once loaded
+	  const originalWidth = imgObj.width;
+	  const originalHeight = imgObj.height;
+	  if (originalWidth > originalHeight)
+	  {
+		if (originalWidth > 3072)
+		{
+			scaleFactor = 3072 / originalWidth;
+		}
+	  }
+	  else
+	  {
+		if (originalHeight > 3072)
+		{
+			scaleFactor = 3072 / originalHeight;
+		}
+	  }
 	  const userUploadedImage = new Konva.Image({
 		x: 0,
 		y: 0,
 		image: imgObj,
 		// width: imgObj.width * 0.5, // Scaling down
 		// height: imgObj.height * 0.5,
-		width: imgObj.width,
-		height: imgObj.height,
+		// width: imgObj.width,
+		// height: imgObj.height,
+		width: originalWidth * scaleFactor,
+		height: originalHeight * scaleFactor,
 		listening: false,
 	  });
   
@@ -69,7 +88,8 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 	  prepWorldFile(userUploadedImage);
 	  
 	  // 4. Free up memory by revoking the object URL
-	  URL.revokeObjectURL(localFileUrl);
+	//   URL.revokeObjectURL(localFileUrl);
+	  setTimeout(() => URL.revokeObjectURL(localFileUrl), 10000);
 
 	  zoomToImage(userUploadedImage);
 
@@ -111,7 +131,9 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 	};
 });
 
-function zoomToImage(sentImage) {
+// ** Zoom to image extents after image load (code via google AI)
+function zoomToImage(sentImage) 
+{
 	// 1. Get the sizes of both the stage and the image
 	const stageWidth = stage.width();
 	const stageHeight = stage.height();
@@ -128,16 +150,103 @@ function zoomToImage(sentImage) {
 	const newX = (stageWidth - imageRect.width * newScale) / 2 - imageRect.x * newScale;
 	const newY = (stageHeight - imageRect.height * newScale) / 2 - imageRect.y * newScale;
   
-	// 4. Apply the transformations to the stage
 	stage.scale({ x: newScale, y: newScale });
 	stage.position({ x: newX, y: newY });
 	
-	// 5. Redraw the stage
 	stage.batchDraw();
-  }
+}
   
+// Touch pan and zoom (two fingers) - from Konva's touch pan & pinch zoom example
+function getDistance(p1, p2) {
+	return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
 
-// ** Zoom and pan to cursor
+function getCenter(p1, p2) {
+	return {
+	  x: (p1.x + p2.x) / 2,
+	  y: (p1.y + p2.y) / 2,
+	};
+}
+
+let lastCenter = null;
+let lastDist = 0;
+let dragStopped = false;
+
+stage.on('touchmove', function (e) {
+  e.evt.preventDefault();
+  const touch1 = e.evt.touches[0];
+  const touch2 = e.evt.touches[1];
+
+  // we need to restore dragging, if it was cancelled by multi-touch
+  if (touch1 && !touch2 && !stage.isDragging() && dragStopped) {
+    stage.startDrag();
+    dragStopped = false;
+  }
+
+  if (touch1 && touch2) {
+    // if the stage was under Konva's drag&drop
+    // we need to stop it, and implement our own pan logic with two pointers
+    if (stage.isDragging()) {
+      dragStopped = true;
+      stage.stopDrag();
+    }
+
+    const rect = stage.container().getBoundingClientRect();
+
+    const p1 = {
+      x: touch1.clientX - rect.left,
+      y: touch1.clientY - rect.top,
+    };
+    const p2 = {
+      x: touch2.clientX - rect.left,
+      y: touch2.clientY - rect.top,
+    };
+
+    if (!lastCenter) {
+      lastCenter = getCenter(p1, p2);
+      return;
+    }
+    const newCenter = getCenter(p1, p2);
+
+    const dist = getDistance(p1, p2);
+
+    if (!lastDist) {
+      lastDist = dist;
+    }
+
+    // local coordinates of center point
+    const pointTo = {
+      x: (newCenter.x - stage.x()) / stage.scaleX(),
+      y: (newCenter.y - stage.y()) / stage.scaleX(),
+    };
+
+    const scale = stage.scaleX() * (dist / lastDist);
+
+    stage.scaleX(scale);
+    stage.scaleY(scale);
+
+    // calculate new position of the stage
+    const dx = newCenter.x - lastCenter.x;
+    const dy = newCenter.y - lastCenter.y;
+
+    const newPos = {
+      x: newCenter.x - pointTo.x * scale + dx,
+      y: newCenter.y - pointTo.y * scale + dy,
+    };
+
+    stage.position(newPos);
+
+    lastDist = dist;
+    lastCenter = newCenter;
+  }
+});
+
+stage.on('touchend', function () {
+  lastDist = 0;
+  lastCenter = null;
+});
+
+// ** Zoom and pan to cursor (mouse) - from Konva's pan and zoom example
 const scaleBy = 1.01;
 stage.on('wheel', (e) => {
 	// stop default scrolling
@@ -171,7 +280,7 @@ stage.on('wheel', (e) => {
 	stage.position(newPos);
 });
 
-// ** Drawing
+// ** Drawing - from Konva's mouse drawing tutorial adapted to include mouse AND touch
 // // create tool select
 // const select = document.createElement('select');
 // select.innerHTML = `
@@ -195,7 +304,7 @@ stage.on('mousedown touchstart', function (e) {
 	{
 		stage.draggable(true);
 	}
-	else if (e.evt.button === 0)
+	else if (e.evt.button === 0 || e.evt.touches.length === 1)
 	{
 		isPaint = true;
 		const pos = stage.getRelativePointerPosition();
@@ -221,7 +330,7 @@ stage.on('mouseup touchend', function (e) {
 	{
 		stage.draggable(false);
 	}
-	else if (e.evt.button === 0)
+	else if (e.evt.button === 0 || e.evt.touches.length === 1)
 	{
 		if (isPaint)
 		{
@@ -244,10 +353,14 @@ stage.on('mousemove touchmove', function (e) {
 	// prevent scrolling on touch devices
 	e.evt.preventDefault();
 
-	const pos = stage.getRelativePointerPosition();
-	const newPoints = lastLine.points().concat([pos.x, pos.y]);
-	lastLine.points(newPoints);
+	if (e.evt.button === 0 || e.evt.touches.length === 1)
+	{
+		const pos = stage.getRelativePointerPosition();
+		const newPoints = lastLine.points().concat([pos.x, pos.y]);
+		lastLine.points(newPoints);
+	}
 });
+
 
 // ** Grouping lines
 function pointsToAbsoluteString(sentPoints, sentLine) {
@@ -349,7 +462,7 @@ document.addEventListener('keydown', function(event)
 		if (stageFocused)
 		{
 			selectedLines.splice(0, selectedLines.length, ...tr.nodes());
-			console.log("Delete pressed - tr.nodes.length = " + tr.nodes.length + " selectedLines.length = " + selectedLines.length);
+			// console.log("Delete pressed - tr.nodes.length = " + tr.nodes.length + " selectedLines.length = " + selectedLines.length);
 			if (selectedLines.length > 0)
 			{
 				for (const line of selectedLines)
@@ -443,7 +556,7 @@ stage.on('click tap', function (e) {
 		// if no key pressed and the node is not selected
 		// select just one
 		tr.nodes([e.target]);
-		console.log("tr.nodes.length = " + tr.nodeType.length);
+		// console.log("tr.nodes.length = " + tr.nodeType.length);
 	} else if (metaPressed && isSelected) {
 		// if we pressed keys and node was selected
 		// we need to remove it from selection:
@@ -536,7 +649,7 @@ fileInput.addEventListener('change', (event) => {
       const fileContent = e.target.result; // String contents of the file
       const parsedObject = JSON.parse(fileContent); // Parse JSON text
       
-      console.log('Parsed JSON Object:', parsedObject);
+    //   console.log('Parsed JSON Object:', parsedObject);
       // Do something with your parsed object here (e.g., update state or UI)
 	  loadSavedJSON(parsedObject, layer, table);
     } catch (error) {
