@@ -281,6 +281,7 @@ stage.on('wheel', (e) => {
 });
 
 // ** Drawing - from Konva's mouse drawing tutorial adapted to include mouse AND touch
+
 // // create tool select
 // const select = document.createElement('select');
 // select.innerHTML = `
@@ -297,46 +298,74 @@ let isPaint = false;
 let mode = 'brush';
 let lastLine;
 
-var namecounter = 0;
+let namecounter = 0;
+export const setNameCounter = (sentCount) => {
+	namecounter = sentCount;
+}
 
 stage.on('mousedown touchstart', function (e) {
-	if (e.evt.button === 2)
+	if (!selectionModeActive)
 	{
-		stage.draggable(true);
-	}
-	else if (e.evt.button === 0 || e.evt.touches.length === 1)
-	{
-		isPaint = true;
-		const pos = stage.getRelativePointerPosition();
-		lastLine = new Konva.Line({
-			stroke: '#df4b26',
-			strokeWidth: 10,
-			globalCompositeOperation:
-			mode === 'brush' ? 'source-over' : 'destination-out',
-			// round cap for smoother lines
-			lineCap: 'round',
-			lineJoin: 'round',
-			// add point twice, so we have some drawings even on a simple click
-			points: [pos.x, pos.y, pos.x, pos.y],
-			name: 'line',
-			id: "line_" + namecounter.toString(),
-		});
-		layer.add(lastLine);
+		if (e.evt.button === 2)
+		{
+			stage.draggable(true);
+		}
+		else if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			isPaint = true;
+			const pos = stage.getRelativePointerPosition();
+			lastLine = new Konva.Line({
+				stroke: '#df4b26',
+				strokeWidth: 10,
+				globalCompositeOperation:
+				mode === 'brush' ? 'source-over' : 'destination-out',
+				// round cap for smoother lines
+				lineCap: 'round',
+				lineJoin: 'round',
+				// add point twice, so we have some drawings even on a simple click
+				points: [pos.x, pos.y, pos.x, pos.y],
+				name: 'line',
+				id: "line_" + namecounter.toString(),
+			});
+			lastLine.setAttr("originalColor", '#df4b26');
+			lastLine.setAttr("Glyph","");
+			layer.add(lastLine);
+		}
 	}
 });
 
 stage.on('mouseup touchend', function (e) {
-	if (e.evt.button === 2)
+	if (!selectionModeActive)
 	{
-		stage.draggable(false);
-	}
-	else if (e.evt.button === 0 || e.evt.touches.length === 1)
-	{
-		if (isPaint)
+		if (e.evt.button === 2)
 		{
-			namecounter++;
+			stage.draggable(false);
 		}
-		isPaint = false;
+		else if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			if (isPaint)
+			{
+				if (lastLine.points().length == 4)
+				{
+					lastLine.destroy();
+				}
+				else
+				{
+					if (undoFlag)
+					{
+						undoFlag = false;
+					}
+					else
+					{
+						undoStack.push( {command: "drawLine", lineName: [lastLine.id()] });
+						redoStack = [];
+						cleanupUndoRedoStacks();
+					}
+					namecounter++;
+				}
+			}
+			isPaint = false;
+		}
 	}
 });
 
@@ -346,18 +375,21 @@ stage.on('contextmenu', (e) => {
 
 // and core function - drawing
 stage.on('mousemove touchmove', function (e) {
-	if (!isPaint) {
-		return;
-	}
-
-	// prevent scrolling on touch devices
-	e.evt.preventDefault();
-
-	if (e.evt.button === 0 || e.evt.touches.length === 1)
+	if (!selectionModeActive)
 	{
-		const pos = stage.getRelativePointerPosition();
-		const newPoints = lastLine.points().concat([pos.x, pos.y]);
-		lastLine.points(newPoints);
+		if (!isPaint) {
+			return;
+		}
+
+		// prevent scrolling on touch devices
+		e.evt.preventDefault();
+
+		if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			const pos = stage.getRelativePointerPosition();
+			const newPoints = lastLine.points().concat([pos.x, pos.y]);
+			lastLine.points(newPoints);
+		}
 	}
 });
 
@@ -388,23 +420,73 @@ function setupNewLineGroup () {
 let selectedLines = [];
 function createLineGroup () {
 	selectedLines.splice(0, selectedLines.length, ...tr.nodes());
-	const newLineGroup = new Konva.Group({
-		id: groupIDInput.value,
-		name: "Group"
-	});
-	for (let i = 0; i < selectedLines.length; i++) {
-		newLineGroup.add(selectedLines[i]);
+	let groupExists = false;
+	const currentGroups = layer.find('Group');
+	for (const group of currentGroups)
+	{
+		if (group.id() == groupIDInput.value)
+		{
+			console.log("Glyph " + groupIDInput.value + " already exists. Adding selected to that group.");
+			groupExists = true;
+			for (let i = 0; i < selectedLines.length; i++) {
+				selectedLines[i].stroke(selectedLines[i].getAttr("originalColor"));
+				selectedLines[i].remove();
+				group.add(selectedLines[i]);
+				selectedLines[i].setAttr("Glyph", groupIDInput.value);
+			}
+		}
 	}
-	layer.add(newLineGroup);
+
+	if (!groupExists)
+	{
+		const newLineGroup = new Konva.Group({
+			id: groupIDInput.value,
+			name: "Group"
+		});
+		for (let i = 0; i < selectedLines.length; i++) {
+			selectedLines[i].stroke(selectedLines[i].getAttr("originalColor"));
+			newLineGroup.add(selectedLines[i]);
+			selectedLines[i].setAttr("Glyph", groupIDInput.value);
+		}
+		layer.add(newLineGroup);
+		addCheckbox(newLineGroup.id(), newLineGroup.id());
+		addNewRow(newLineGroup.id());
+	}
+
 	tr.nodes([]);
 	selectedLines = [];
+	cleanupEmptyGroups();
 	layer.batchDraw();
-	addCheckbox(newLineGroup.id(), newLineGroup.id());
-	addNewRow(newLineGroup.id());
+	
+	deleteSelectionButton.hidden = true;
 	groupButton.hidden = true;
 	groupIDInput.hidden = true;
 	groupIDSubmit.hidden = true;
 	lineInfo.innerHTML = "No selection...";
+}
+
+function cleanupEmptyGroups ()
+{
+	const currentGroups = layer.find('Group');
+	for (const group of currentGroups)
+	{
+		if (group.getChildren().length === 0)
+		{
+			const emptyGroupID = group.id();
+			group.destroy();
+			layer.batchDraw();
+			const tempCheckbox = document.getElementById(emptyGroupID);
+			if (tempCheckbox)
+			{
+				tempCheckbox.remove();
+			}
+			var matchingRow = checkTableForGroupID(table.getRows(), emptyGroupID);
+			if (matchingRow != null)
+			{
+				matchingRow.delete();
+			}
+		}
+	}
 }
 
 export function addCheckbox(labelText, value) {
@@ -454,6 +536,7 @@ function toggleGroupVisibility (sentID, sentState)
 	}
 }
 
+
 // ** Delete selected lines
 document.addEventListener('keydown', function(event) 
 {
@@ -461,62 +544,379 @@ document.addEventListener('keydown', function(event)
 	{
 		if (stageFocused)
 		{
-			selectedLines.splice(0, selectedLines.length, ...tr.nodes());
-			// console.log("Delete pressed - tr.nodes.length = " + tr.nodes.length + " selectedLines.length = " + selectedLines.length);
-			if (selectedLines.length > 0)
-			{
-				for (const line of selectedLines)
-				{
-					line.destroy();
-				}
-				tr.nodes([]);
-				selectedLines = [];
-				cleanupEmptyGroups();
-				layer.batchDraw();
-			}
+			deleteLines();
 		}
 	}
 });
 
-function cleanupEmptyGroups ()
+function deleteLines ()
 {
-	const currentGroups = layer.find('Group');
-	for (const group of currentGroups)
+	selectedLines.splice(0, selectedLines.length, ...tr.nodes());
+	// console.log("Delete pressed - tr.nodes.length = " + tr.nodes.length + " selectedLines.length = " + selectedLines.length);
+	if (selectedLines.length > 0)
 	{
-		if (group.getChildren().length === 0)
+		let tempDeleteObj = { command: "deleteLine", lineObjs: [] };
+		for (const line of selectedLines)
 		{
-			const emptyGroupID = group.id();
-			group.destroy();
-			layer.batchDraw();
-			const tempCheckbox = document.getElementById(emptyGroupID);
-			if (tempCheckbox)
-			{
-				tempCheckbox.remove();
-			}
-			var matchingRow = checkTableForGroupID(table.getRows(), emptyGroupID);
-			if (matchingRow != null)
-			{
-				matchingRow.delete();
-			}
+			const tempLineObj = line.clone();
+			tempLineObj.stroke(tempLineObj.getAttr("originalColor"));
+			// *** TODO: Figure out how to record the Group this line was part of, IF it was part of a Group
+			tempLineObj.remove();
+			tempDeleteObj.lineObjs.push(tempLineObj);
+
+			line.destroy();
 		}
+		// redoStack = [];
+		if (undoFlag)
+		{
+			redoStack.push(tempDeleteObj);
+			undoFlag = false;
+			cleanupUndoRedoStacks();
+		}
+		else
+		{
+			undoStack.push(tempDeleteObj);
+			cleanupUndoRedoStacks();
+		}
+		tr.nodes([]);
+		selectedLines = [];
+		cleanupEmptyGroups();
+		layer.batchDraw();
+
+		deleteSelectionButton.hidden = true;
+		groupButton.hidden = true;
+		groupIDInput.hidden = true;
+		groupIDSubmit.hidden = true;
 	}
 }
 
 
-// ** Line selection
+// ** Undo Redo lines
+let undoFlag = false;
+let undoRedoMax = 5;
+let undoStack = [];
+let redoStack = [];
+
+const undoButton = document.getElementById("undoButton");
+undoButton.addEventListener("click", undoLastCommand);
+undoButton.hidden = true;
+
+const redoButton = document.getElementById("redoButton");
+redoButton.addEventListener("click", redoLastCommand);
+redoButton.hidden = true;
+
+function undoLastCommand ()
+{
+	if (undoStack.length > 0)
+	{
+		undoFlag = true;
+		const lastCommand = undoStack.pop();
+		if (lastCommand.command == "drawLine")
+		{
+			// console.log("last line name: " + lastCommand.lineName[0]);
+			undoAddLine(lastCommand.lineName);
+		}
+		else if (lastCommand.command == "deleteLine")
+		{
+			undoDeleteLine(lastCommand.lineObjs);
+		}
+	}
+}
+
+function redoLastCommand ()
+{
+	if (redoStack.length > 0)
+	{
+		const lastCommand = redoStack.pop();
+		if (lastCommand.command == "drawLine")
+		{
+			undoAddLine(lastCommand.lineName);
+		}
+		else if (lastCommand.command == "deleteLine")
+		{
+			undoDeleteLine(lastCommand.lineObjs);
+		}
+	}
+}
+
+function undoAddLine (sentLineIDs)
+{
+	tr.nodes([]);
+	let tempNodeArray = [];
+	for (let i = 0; i < sentLineIDs.length; i++) 
+	{
+		const tempLineNode = stage.findOne("#" + sentLineIDs[i]);
+		if (tempLineNode)
+		{
+			tempNodeArray.push(tempLineNode);
+		}
+	}
+	tr.nodes(tempNodeArray);
+	deleteLines();
+}
+
+function undoDeleteLine (sentLineObjects)
+{
+	const currentGroups = layer.find('Group');
+	let tempLineIDArray = [];
+	for (let i = 0; i < sentLineObjects.length; i++) {
+		let groupExists = false;
+		tempLineIDArray.push(sentLineObjects[i].id());
+		layer.add(sentLineObjects[i]);
+		
+		if (sentLineObjects[i].getAttr("Glyph") != "")
+		{
+			if (currentGroups.length > 0){
+				for (const group of currentGroups)
+				{
+					if (group.id() == sentLineObjects[i].getAttr("Glyph"))
+					{
+						console.log("Glyph " + sentLineObjects[i].getAttr("Glyph") + " exists. Adding restored line to that group.");
+						groupExists = true;
+						sentLineObjects[i].stroke(sentLineObjects[i].getAttr("originalColor"));
+						group.add(sentLineObjects[i]);
+					}
+				}
+
+				if (!groupExists)
+				{
+					console.log("Restored line group does not exist. Restoring as part of no group.");
+					sentLineObjects[i].setAttr("Glyph","");
+				}
+			}
+			else
+			{
+				console.log("No groups in project. Restoring line with no groups.");
+				sentLineObjects[i].setAttr("Glyph","");
+			}
+		}
+	}
+	layer.batchDraw();
+	if (undoFlag)
+	{
+		redoStack.push({ command: "drawLine", lineName: tempLineIDArray });
+		undoFlag = false;
+	}
+	else
+	{
+		undoStack.push({ command: "drawLine", lineName: tempLineIDArray });
+	}
+	cleanupUndoRedoStacks();
+}
+
+function cleanupUndoRedoStacks ()
+{
+	if (undoStack.length > 0)
+	{
+		// console.log("undoStack.length = " + undoStack.length.toString());
+		undoStack.forEach(element => {
+			if (element.command == "drawLine")
+			{
+				// console.log("undoStack - command: " + element.command + " lineName: " + element.lineName[0]);
+			}
+			else if (element.command == "deleteLine")
+			{
+				// console.log("undoStack - command: " + element.command);
+			}
+		});
+	}
+	if (undoStack.length > undoRedoMax)
+	{
+		const numberToRemove = undoStack.length - undoRedoMax;
+		const removedItems = undoStack.splice(0, numberToRemove);
+		for (let i = 0; i < removedItems.length; i++) {
+			if (removedItems[i].command == "deleteLine")
+			{
+				for (let j = 0; j < removedItems[i].lineObjs.length; j++) {
+					removedItems[i].lineObjs[j].destroy();
+				}
+			}
+		}
+	}
+
+	if (undoStack.length == 0)
+	{
+		undoButton.hidden = true;
+	}
+	else if (undoStack.length > 0)
+	{
+		undoButton.hidden = false;
+	}
+	if (redoStack.length == 0)
+	{
+		redoButton.hidden = true;
+	}
+	else if (redoStack.length > 0)
+	{
+		redoButton.hidden = false;
+	}
+}
+
+
+// ** Line selection - from Konva's selection demo
+const selectionColor = '#f5cc27';
+let selectionModeActive = false;
+const deleteSelectionButton = document.getElementById("deleteSelectedButton");
+deleteSelectionButton.addEventListener("click", deleteLines);
 const lineInfo = document.getElementById('lineinfo');
 lineInfo.innerHTML = "No selection...";
+
+const selectionModeToggle = document.getElementById('selectionModeToggle');
+selectionModeToggle.addEventListener('change', (event) => {
+	if (event.target.checked)
+	{
+		selectionModeActive = true;
+	}
+	else
+	{
+		selectionModeActive = false;
+		deleteSelectionButton.hidden = true;
+		groupButton.hidden = true;
+		groupIDInput.hidden = true;
+		groupIDSubmit.hidden = true;
+	}
+});
 
 // create transformer
 const tr = new Konva.Transformer();
 layer.add(tr);
 
-// clicks should select/deselect shapes
+//Selection by rectangle
+let selectionRectangle = new Konva.Rect({
+  fill: 'rgba(0,0,255,0.5)',
+  visible: false,
+});
+layer.add(selectionRectangle);
+
+let x1, y1, x2, y2;
+stage.on('mousedown touchstart', (e) => {
+	if (selectionModeActive)
+	{
+		// do nothing if we mousedown on any shape
+		if (e.target !== stage) {
+			return;
+		}
+		x1 = stage.getRelativePointerPosition().x;
+		y1 = stage.getRelativePointerPosition().y;
+		x2 = stage.getRelativePointerPosition().x;
+		y2 = stage.getRelativePointerPosition().y;
+
+		selectionRectangle.setAttrs({
+			x: x1,
+			y: y1,
+			width: 0,
+			height: 0,
+			visible: true,
+		});
+	}
+});
+
+stage.on('mousemove touchmove', () => {
+	if (selectionModeActive)
+	{
+		// do nothing if we didn't start selection
+		if (!selectionRectangle.visible()) {
+			return;
+		}
+		x2 = stage.getRelativePointerPosition().x;
+		y2 = stage.getRelativePointerPosition().y;
+
+		selectionRectangle.setAttrs({
+			x: Math.min(x1, x2),
+			y: Math.min(y1, y2),
+			width: Math.abs(x2 - x1),
+			height: Math.abs(y2 - y1),
+		});
+	}
+});
+
+stage.on('mouseup touchend', () => {
+	if (selectionModeActive)
+	{
+		// do nothing if we didn't start selection
+		if (!selectionRectangle.visible()) {
+			return;
+		}
+		// update visibility in timeout, so we can check it in click event
+		setTimeout(() => {
+			selectionRectangle.visible(false);
+		});
+
+		var shapes = stage.find('.line');
+		var box = selectionRectangle.getClientRect();
+		var newSelected = [];
+		for (let i = 0; i < shapes.length; i++) {
+			if (Konva.Util.haveIntersection(box, shapes[i].getClientRect()))
+			{
+				newSelected.push(shapes[i]);
+			}
+		}
+		const tempNodes = tr.nodes();
+		tempNodes.forEach(line => {
+			line.stroke(line.getAttr("originalColor"));
+		});
+		newSelected.forEach(line => {
+			line.stroke(selectionColor);
+		});
+		tr.nodes(newSelected);
+		if (newSelected.length == 0)
+		{
+			lineInfo.innerHTML = "No selection...";
+			deleteSelectionButton.hidden = true;
+			groupButton.hidden = true;
+			groupIDInput.hidden = true;
+			groupIDSubmit.hidden = true;
+		}
+		else if (newSelected.length == 1)
+		{
+			const isInGroup = newSelected[0].getParent() && newSelected[0].getParent().getClassName() === "Group";
+			if (isInGroup) {
+				lineInfo.innerHTML = newSelected[0].name() + " is part of Glyph: " + newSelected[0].getParent().id();
+				deleteSelectionButton.hidden = false;
+				groupButton.textContent = "Move to OR Create Glyph";
+				groupButton.hidden = false;
+				groupIDInput.hidden = true;
+				groupIDSubmit.textContent = "Transfer/Create";
+				groupIDSubmit.hidden = true;
+			}
+			else {
+				lineInfo.innerHTML = newSelected[0].name() + " is not part of a Glyph.";
+				deleteSelectionButton.hidden = false;
+				groupButton.textContent = "Add to OR Create Glyph";
+				groupButton.hidden = false;
+				groupIDInput.hidden = true;
+				groupIDSubmit.textContent = "Add/Create";
+				groupIDSubmit.hidden = true;
+			}
+		}
+		else if (newSelected.length > 1)
+		{
+			lineInfo.innerHTML = "Multiple lines selected.";
+			deleteSelectionButton.hidden = false;
+			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.hidden = false;
+			groupIDInput.hidden = true;
+			groupIDSubmit.textContent = "Transfer/Create";
+		}
+	}
+});
+
+//Selection by direct click - clicks should select/deselect shapes
 stage.on('click tap', function (e) {
+	// if we are selecting with rect, do nothing
+	if (selectionRectangle.visible() && selectionRectangle.width() > 0 && selectionRectangle.height() > 0) {
+		return;
+	}
+
 	// if click on empty area - remove all selections
 	if (e.target === stage) {
+		const tempNodes = tr.nodes();
+		tempNodes.forEach(line => {
+			line.stroke(line.getAttr("originalColor"));
+		});
 		tr.nodes([]);
 		lineInfo.innerHTML = "No selection...";
+		deleteSelectionButton.hidden = true;
 		groupButton.hidden = true;
 		groupIDInput.hidden = true;
 		groupIDSubmit.hidden = true;
@@ -536,46 +936,102 @@ stage.on('click tap', function (e) {
 		const isInGroup = e.target.getParent() && e.target.getParent().getClassName() === "Group";
 		if (isInGroup) {
 			lineInfo.innerHTML = e.target.name() + " is part of Glyph: " + e.target.getParent().id();
-			groupButton.hidden = true;
+			deleteSelectionButton.hidden = false;
+			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.hidden = false;
 			groupIDInput.hidden = true;
+			groupIDSubmit.textContent = "Transfer/Create";
 			groupIDSubmit.hidden = true;
 		}
 		else {
 			lineInfo.innerHTML = e.target.name() + " is not part of a Glyph.";
+			deleteSelectionButton.hidden = false;
+			groupButton.textContent = "Add to OR Create Glyph";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
+			groupIDSubmit.textContent = "Add/Create";
 			groupIDSubmit.hidden = true;
 		}
 	}
 
-	// do we pressed shift or ctrl?
+	// have we pressed shift or ctrl?
 	const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
 	const isSelected = tr.nodes().indexOf(e.target) >= 0;
 
 	if (!metaPressed && !isSelected) {
 		// if no key pressed and the node is not selected
 		// select just one
+		const tempNodes = tr.nodes();
+		tempNodes.forEach(line => {
+			line.stroke(line.getAttr("originalColor"));
+		});
 		tr.nodes([e.target]);
-		// console.log("tr.nodes.length = " + tr.nodeType.length);
+		// console.log("Direct select: tr.nodes.length = " + tr.nodeType.length);
 	} else if (metaPressed && isSelected) {
 		// if we pressed keys and node was selected
 		// we need to remove it from selection:
 		const nodes = tr.nodes().slice(); // use slice to have new copy of array
 		// remove node from array
+		e.target.stroke(e.target.getAttr("originalColor"));
 		nodes.splice(nodes.indexOf(e.target), 1);
 		tr.nodes(nodes);
+		if (tr.nodes().length == 0)
+		{
+			lineInfo.innerHTML = "No selection...";
+			deleteSelectionButton.hidden = true;
+		}
+		else if (tr.nodes().length == 1)
+		{
+			const tempObj = tr.nodes();
+			const isInGroup = tempObj[0].getParent() && tempObj[0].getParent().getClassName() === "Group";
+			if (isInGroup) {
+				lineInfo.innerHTML = tempObj[0].name() + " is part of Glyph: " + tempObj[0].getParent().id();
+				deleteSelectionButton.hidden = false;
+				groupButton.textContent = "Move to OR Create Glyph";
+				groupButton.hidden = false;
+				groupIDInput.hidden = true;
+				groupIDSubmit.textContent = "Transfer/Create";
+				groupIDSubmit.hidden = true;
+			}
+			else {
+				lineInfo.innerHTML = tempObj[0].name() + " is not part of a Glyph.";
+				deleteSelectionButton.hidden = false;
+				groupButton.textContent = "Add to OR Create Glyph";
+				groupButton.hidden = false;
+				groupIDInput.hidden = true;
+				groupIDSubmit.textContent = "Add/Create";
+				groupIDSubmit.hidden = true;
+			}
+		}
+		else if (tr.nodes().length > 1)
+		{
+			lineInfo.innerHTML = "Multiple lines selected.";
+			deleteSelectionButton.hidden = false;
+			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.hidden = false;
+			groupIDInput.hidden = true;
+			groupIDSubmit.textContent = "Transfer/Create";
+		}
 	} else if (metaPressed && !isSelected) {
 		// add the node into selection
 		const nodes = tr.nodes().concat([e.target]);
 		tr.nodes(nodes);
+		lineInfo.innerHTML = "Multiple lines selected.";
+		deleteSelectionButton.hidden = false;
+		groupButton.textContent = "Move to OR Create Glyph";
+		groupButton.hidden = false;
+		groupIDInput.hidden = true;
+		groupIDSubmit.textContent = "Transfer/Create";
 	}
+	const tempNodes = tr.nodes();
+	tempNodes.forEach(line => {
+		line.stroke(selectionColor);
+	});
 });
 
 // ** Data table
-// const blankData = Array(1).fill({});
 const tableHeight = () => Math.floor(window.innerHeight * 0.25);
 var table = new Tabulator("#infotable", {
-    // data: blankData,
 	layout: "fitData",
 	height: tableHeight(),
     columns: [
@@ -610,9 +1066,6 @@ async function addNewRow (glyphID) {
 	newRow.update({ petro_no: glyphID, image_name: backgroundImagePath });
 }
 
-// const newRowButton = document.getElementById("newrow");
-// newRowButton.addEventListener("click", addNewRow);
-
 const exportCSVButton = document.getElementById("reportcsv");
 exportCSVButton.addEventListener("click", () => exportCSV(table));
 
@@ -643,6 +1096,7 @@ fileInput.addEventListener('change', (event) => {
 
   const reader = new FileReader();
 
+  // This bit comes from google AI
   // Triggered when the file finishes reading
   reader.onload = (e) => {
     try {

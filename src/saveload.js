@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { scaleFactor, addCheckbox } from './index.js';
+import { setNameCounter, scaleFactor, addCheckbox } from './index.js';
 // import { clean } from "gh-pages";
 
 function formatName () {
@@ -183,6 +183,7 @@ export function writeWorldFile (sentImageFilename)
 
 export function loadSavedJSON (sentJSON, sentLayer, sentTable)
 {
+  let lineCounter = 0;
   const groupArray = sentJSON.features;
   for (const group of groupArray)
   {
@@ -191,7 +192,7 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
       id: group.properties.petro_no,
       name: "Group"
     });
-    let lineCounter = 0;
+    // let lineCounter = 0;
     for (const coordArray of group.geometry.coordinates)
     {
       const tempCoords = [];
@@ -211,8 +212,10 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
         lineJoin: 'round',
         points: tempCoords,
         name: 'line',
-        id: lineCounter.toString(),
+        id: "line_" + lineCounter.toString(),
       });
+      tempLine.setAttr("originalColor", '#df4b26');
+      tempLine.setAttr("Glyph", group.properties.petro_no);
       sentLayer.add(tempLine);
       tempGroup.add(tempLine);
       lineCounter += 1;
@@ -222,4 +225,5 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
     const groupTableInfo = group.properties;
     sentTable.addData(groupTableInfo);
   }
+  setNameCounter(lineCounter);
 }

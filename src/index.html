@@ -10,17 +10,33 @@
         <input class="btn btn-primary" type="file" id="file_input" name="file_input" accept="image/*">
     </div>
 
-    <div class="drawing_container p-2">
-        <div class="konva_column" id="konvatest"></div>
-        <div class="layers_column" id="groupsVis">Glyphs</div>
+    <div class="drawing_and_layers_container vh-65 p-2">
+        <div class="konva_column position-relative">
+            <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
+                <button class="btn btn-secondary btn-sm me-1" id="undoButton">Undo</button>
+                <button class="btn btn-secondary btn-sm" id="redoButton">Redo</button>
+            </div>
+            <div id="konvatest"></div>
+        </div>
+
+        <div class="layers_column col-md-6 d-flex flex-column row-gap-2" style="max-height: 65vh">
+            <div class="border border-1 rounded p-2 min-h-0 overflow-y-auto" id="groupsVis" style="height: 75%;">Glyphs</div>
+            <div class="border border-1 rounded p-2" id="selectionControls" style="height: 25%;">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="selectionModeToggle">
+                    <label class="form-check-label" for="selectionModeToggle">Selection Mode</label>
+                </div>
+                <button type="button" class="btn btn-danger m-2" id="deleteSelectedButton" hidden>Delete Selected</button>
+            </div>
+        </div>
     </div>
     
     <div id="lineinfo"></div>
 
     <div id="grouping">
-        <button id="groupbutton" hidden>Create Glyph</button>
+        <button type="button" class="btn btn-primary" id="groupbutton" hidden>Create Glyph</button>
         <input type="text" id="groupidinput" placeholder="Group ID" hidden>
-        <button id="submitgroupid" hidden>Submit Glyph</button>
+        <button type="button" class="btn btn-success" id="submitgroupid" hidden>Submit Glyph</button>
     </div>
 
     <!-- <button id="newrow">Create New Row</button> -->
