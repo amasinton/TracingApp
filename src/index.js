@@ -426,7 +426,7 @@ function createLineGroup () {
 	{
 		if (group.id() == groupIDInput.value)
 		{
-			console.log("Glyph " + groupIDInput.value + " already exists. Adding selected to that group.");
+			// console.log("Glyph " + groupIDInput.value + " already exists. Adding selected to that group.");
 			groupExists = true;
 			for (let i = 0; i < selectedLines.length; i++) {
 				selectedLines[i].stroke(selectedLines[i].getAttr("originalColor"));
@@ -455,7 +455,7 @@ function createLineGroup () {
 
 	tr.nodes([]);
 	selectedLines = [];
-	cleanupEmptyGroups();
+	cleanupEmptyGroups({ command: "None" });
 	layer.batchDraw();
 	
 	deleteSelectionButton.hidden = true;
@@ -465,8 +465,9 @@ function createLineGroup () {
 	lineInfo.innerHTML = "No selection...";
 }
 
-function cleanupEmptyGroups ()
+function cleanupEmptyGroups (sentUndoRedoObj)
 {
+	let deletedRows = [];
 	const currentGroups = layer.find('Group');
 	for (const group of currentGroups)
 	{
@@ -480,11 +481,21 @@ function cleanupEmptyGroups ()
 			{
 				tempCheckbox.remove();
 			}
+			
 			var matchingRow = checkTableForGroupID(table.getRows(), emptyGroupID);
 			if (matchingRow != null)
 			{
+				deletedRows.push(matchingRow.getData());
 				matchingRow.delete();
 			}
+		}
+	}
+	if (deletedRows.length > 0)
+	{
+		if (sentUndoRedoObj.command != "None")
+		{
+			sentUndoRedoObj.glyphData = deletedRows;
+			// console.log("sentUndoRedoObj.glyphData[0] = " + JSON.stringify(sentUndoRedoObj.glyphData[0]));
 		}
 	}
 }
@@ -580,7 +591,7 @@ function deleteLines ()
 		}
 		tr.nodes([]);
 		selectedLines = [];
-		cleanupEmptyGroups();
+		cleanupEmptyGroups(tempDeleteObj);
 		layer.batchDraw();
 
 		deleteSelectionButton.hidden = true;
@@ -618,7 +629,7 @@ function undoLastCommand ()
 		}
 		else if (lastCommand.command == "deleteLine")
 		{
-			undoDeleteLine(lastCommand.lineObjs);
+			undoDeleteLine(lastCommand);
 		}
 	}
 }
@@ -634,7 +645,7 @@ function redoLastCommand ()
 		}
 		else if (lastCommand.command == "deleteLine")
 		{
-			undoDeleteLine(lastCommand.lineObjs);
+			undoDeleteLine(lastCommand);
 		}
 	}
 }
@@ -655,39 +666,57 @@ function undoAddLine (sentLineIDs)
 	deleteLines();
 }
 
-function undoDeleteLine (sentLineObjects)
+function undoDeleteLine (sentCommand)
 {
+	if ("glyphData" in sentCommand)
+	{
+		// console.log("sentCommand.glyphData.length = " + sentCommand.glyphData.length.toString());
+		for (let i = 0; i < sentCommand.glyphData.length; i++) {
+			// console.log("dataRow = " + JSON.stringify(sentCommand.glyphData[i]));
+			const restoredLineGroup = new Konva.Group({
+				id: sentCommand.glyphData[i].petro_no,
+				name: "Group"
+			});
+			layer.add(restoredLineGroup);
+			addCheckbox(restoredLineGroup.id(), restoredLineGroup.id());
+			// console.log("Restored Glpyh ID: " + restoredLineGroup.id());
+
+			table.addRow(sentCommand.glyphData[i]);
+			// console.log("Restored dataRow: " + sentCommand.glyphData[i].petro_no);
+		}
+	}
+
 	const currentGroups = layer.find('Group');
 	let tempLineIDArray = [];
-	for (let i = 0; i < sentLineObjects.length; i++) {
+	for (let i = 0; i < sentCommand.lineObjs.length; i++) {
 		let groupExists = false;
-		tempLineIDArray.push(sentLineObjects[i].id());
-		layer.add(sentLineObjects[i]);
+		tempLineIDArray.push(sentCommand.lineObjs[i].id());
+		layer.add(sentCommand.lineObjs[i]);
 		
-		if (sentLineObjects[i].getAttr("Glyph") != "")
+		if (sentCommand.lineObjs[i].getAttr("Glyph") != "")
 		{
 			if (currentGroups.length > 0){
 				for (const group of currentGroups)
 				{
-					if (group.id() == sentLineObjects[i].getAttr("Glyph"))
+					if (group.id() == sentCommand.lineObjs[i].getAttr("Glyph"))
 					{
-						console.log("Glyph " + sentLineObjects[i].getAttr("Glyph") + " exists. Adding restored line to that group.");
+						// console.log("Glyph " + sentCommand.lineObjs[i].getAttr("Glyph") + " exists. Adding restored line to that group.");
 						groupExists = true;
-						sentLineObjects[i].stroke(sentLineObjects[i].getAttr("originalColor"));
-						group.add(sentLineObjects[i]);
+						sentCommand.lineObjs[i].stroke(sentCommand.lineObjs[i].getAttr("originalColor"));
+						group.add(sentCommand.lineObjs[i]);
 					}
 				}
 
 				if (!groupExists)
 				{
-					console.log("Restored line group does not exist. Restoring as part of no group.");
-					sentLineObjects[i].setAttr("Glyph","");
+					// console.log("Restored line glyph does not exist. Restoring line as part of no glyph.");
+					sentCommand.lineObjs[i].setAttr("Glyph","");
 				}
 			}
 			else
 			{
-				console.log("No groups in project. Restoring line with no groups.");
-				sentLineObjects[i].setAttr("Glyph","");
+				// console.log("No groups in project. Restoring line with no glyph.");
+				sentCommand.lineObjs[i].setAttr("Glyph","");
 			}
 		}
 	}
