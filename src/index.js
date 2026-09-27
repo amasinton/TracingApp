@@ -604,7 +604,7 @@ function deleteLines ()
 
 // ** Undo Redo lines
 let undoFlag = false;
-let undoRedoMax = 5;
+let undoRedoMax = 10;
 let undoStack = [];
 let redoStack = [];
 
