@@ -1,10 +1,8 @@
 import "bootswatch/dist/darkly/bootstrap.min.css";
-// import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css';
 import 'bootstrap';
 import Konva from 'konva';
 import {TabulatorFull as Tabulator} from 'tabulator-tables';
-// import "tabulator-tables/dist/css/tabulator.min.css";
 import "tabulator-tables/dist/css/tabulator_bootstrap5.min.css";
 import { loadSavedJSON, checkTableForGroupID, saveLoadReportLayerChildren, exportCSV, prepWorldFile, writeWorldFile } from './saveload.js';
 
@@ -37,97 +35,112 @@ const layer = new Konva.Layer();
 stage.add(layer);
 
 // ** Load Background image - adapted from example code by google AI
+let userUploadedImage = new Konva.Image({
+	x: 0,
+	y: 0,
+	width: 256,
+	height: 256,
+	listening: false,
+	name: "BGImage",
+});
+layer.add(userUploadedImage);
+let bgImageLoaded = false;
 let backgroundImagePath = "";
 export let scaleFactor = 1.0;
+
+document.getElementById("image_upload_item").addEventListener('click', function (e) {
+	e.preventDefault();
+	document.getElementById("file_input").click();
+});
+
 document.getElementById('file_input').addEventListener('change', function (e) {
 	const file = e.target.files[0];
 	if (!file) return;
-  
+
+	scaleFactor = 1.0;
+
 	// 1. Convert the file object into a usable local URL object
 	backgroundImagePath = file.name;
 	const localFileUrl = URL.createObjectURL(file);
-  
+
 	// 2. Load the file into a native Image instance
 	const imgObj = new Image();
 	imgObj.src = localFileUrl;
-  
-	imgObj.onload = function () {
-	  // 3. Create the Konva shape once loaded
-	  const originalWidth = imgObj.width;
-	  const originalHeight = imgObj.height;
-	  if (originalWidth > originalHeight)
-	  {
-		if (originalWidth > 3072)
-		{
-			scaleFactor = 3072 / originalWidth;
-		}
-	  }
-	  else
-	  {
-		if (originalHeight > 3072)
-		{
-			scaleFactor = 3072 / originalHeight;
-		}
-	  }
-	  const userUploadedImage = new Konva.Image({
-		x: 0,
-		y: 0,
-		image: imgObj,
-		// width: imgObj.width * 0.5, // Scaling down
-		// height: imgObj.height * 0.5,
-		// width: imgObj.width,
-		// height: imgObj.height,
-		width: originalWidth * scaleFactor,
-		height: originalHeight * scaleFactor,
-		listening: false,
-	  });
-  
-	  layer.add(userUploadedImage);
-	  userUploadedImage.moveToBottom();
-	  layer.batchDraw();
-	  prepWorldFile(userUploadedImage);
-	  
-	  // 4. Free up memory by revoking the object URL
-	//   URL.revokeObjectURL(localFileUrl);
-	  setTimeout(() => URL.revokeObjectURL(localFileUrl), 10000);
 
-	  zoomToImage(userUploadedImage);
+	imgObj.onload = function () {
+
+		// 3. Create the Konva shape once loaded
+		const originalWidth = imgObj.width;
+		const originalHeight = imgObj.height;
+		if (originalWidth > originalHeight)
+		{
+			if (originalWidth > 3072)
+			{
+				scaleFactor = 3072 / originalWidth;
+			}
+		}
+		else
+		{
+			if (originalHeight > 3072)
+			{
+				scaleFactor = 3072 / originalHeight;
+			}
+		}
+
+		userUploadedImage.image(imgObj);
+		userUploadedImage.width(originalWidth * scaleFactor);
+		userUploadedImage.height(originalHeight * scaleFactor);
+
+		//Reset stage position and zoom (necessary to center and zoom to image extents after load)
+		stage.scale({ x: 1.0, y: 1.0 });
+		stage.position({ x: 0.0, y: 0.0 });
+
+		userUploadedImage.moveToBottom();
+		layer.batchDraw();
+		prepWorldFile(userUploadedImage);
+		
+		// 4. Free up memory by revoking the object URL
+		setTimeout(() => URL.revokeObjectURL(localFileUrl), 10000);
+
+		zoomToImage(userUploadedImage);
 
 		userUploadedImage.cache();
 		userUploadedImage.filters([Konva.Filters.Contrast]);
 		userUploadedImage.contrast(0);
 
-	  	const sliderLabel = document.createElement('label');
-		sliderLabel.classList.add("ms-3", "me-3");
-		sliderLabel.htmlFor = 'contrast_slider';
-		sliderLabel.textContent = 'Contrast: ';
+		if (!bgImageLoaded)
+		{			
+			const sliderLabel = document.createElement('label');
+			sliderLabel.classList.add("ms-3", "me-3");
+			sliderLabel.htmlFor = 'contrast_slider';
+			sliderLabel.textContent = 'Contrast: ';
 
-		const slider = document.createElement('input');
-		slider.type = 'range';
-		slider.min = '-100';
-		slider.max = '100';
-		slider.value = userUploadedImage.contrast();
-		slider.id = 'contrast_slider';
+			const slider = document.createElement('input');
+			slider.type = 'range';
+			slider.min = '-100';
+			slider.max = '100';
+			slider.value = userUploadedImage.contrast();
+			slider.id = 'contrast_slider';
 
-		// slider.style.position = 'absolute';
-		// slider.style.top = '20px';
-		// slider.style.left = '20px';
+			slider.addEventListener('input', (e) => {
+				const value = parseInt(e.target.value);
+				userUploadedImage.contrast(value);
+			});
 
-		slider.addEventListener('input', (e) => {
-			const value = parseInt(e.target.value);
-			userUploadedImage.contrast(value);
-		});
+			const nameTextInput = document.createElement('input');
+			nameTextInput.type = 'text';
+			nameTextInput.classList.add("form-control", "w-auto");
+			nameTextInput.id = 'nameTextInput';
+			nameTextInput.placeholder = "File Name";
 
-		const nameTextInput = document.createElement('input');
-		nameTextInput.type = 'text';
-		nameTextInput.classList.add("form-control", "w-auto");
-		nameTextInput.id = 'nameTextInput';
-		nameTextInput.placeholder = "File Name";
+			const imageLoadDiv = document.getElementById("navbarColor01");
+			imageLoadDiv.appendChild(nameTextInput);
+			imageLoadDiv.appendChild(sliderLabel);
+			imageLoadDiv.appendChild(slider);
 
-		const imageLoadDiv = document.getElementById("load_image");
-		imageLoadDiv.appendChild(nameTextInput);
-		imageLoadDiv.appendChild(sliderLabel);
-		imageLoadDiv.appendChild(slider);
+			bgImageLoaded = true;
+		}
+		document.getElementById("contrast_slider").value = userUploadedImage.contrast();
 	};
 });
 
@@ -1095,17 +1108,31 @@ async function addNewRow (glyphID) {
 	newRow.update({ petro_no: glyphID, image_name: backgroundImagePath });
 }
 
-const exportCSVButton = document.getElementById("reportcsv");
-exportCSVButton.addEventListener("click", () => exportCSV(table));
 
-const writeWorldButton = document.getElementById("reportworldfile");
-writeWorldButton.addEventListener("click", () => writeWorldFile(backgroundImagePath));
+// ** Exporting various formats
+document.getElementById("export_csv_item").addEventListener('click', function (e) {
+	e.preventDefault();
+	exportCSV(table);
+});
+
+document.getElementById("export_worldfile_item").addEventListener('click', function (e) {
+	e.preventDefault();
+	writeWorldFile(backgroundImagePath);
+});
+
 
 // ** Save prep
-const reportChildrenButton = document.getElementById("reportchildren");
-reportChildrenButton.addEventListener("click", () => saveLoadReportLayerChildren(layer, table));
+document.getElementById("save_file_item").addEventListener('click', function (e) {
+	e.preventDefault();
+	saveLoadReportLayerChildren(layer, table);
+});
+
 
 // ** Load
+document.getElementById("save_upload_item").addEventListener('click', function (e) {
+	e.preventDefault();
+	document.getElementById("jsonFileInput").click();
+});
 const fileInput = document.getElementById('jsonFileInput');
 
 fileInput.addEventListener('change', (event) => {

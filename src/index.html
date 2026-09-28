@@ -5,8 +5,43 @@
     <title>Tracing Tools</title>
 </head>
 <body class="p-3">
-    <div class="d-flex align-items-center gap-2" id="load_image">
-        <label for="file_input">Load Background Image: </label>
+    <nav class="navbar navbar-expand-lg bg-primary mb-1" data-bs-theme="dark">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">Trace</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarColor01">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Load
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" id="image_upload_item" href="#">Load Image</a></li>
+                  <li><a class="dropdown-item" id="save_upload_item" href="#">Load Saved Trace</a></li>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Save
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" id="save_file_item" href="#">Save Trace</a></li>
+                  <li><a class="dropdown-item" id="export_csv_item" href="#">Export .csv</a></li>
+                  <li><a class="dropdown-item" id="export_worldfile_item" href="#">Export Worldfile</a></li>
+                </ul>
+              </li>
+            </ul>
+            <!-- <form class="d-flex" role="search">
+              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+              <button class="btn btn-outline-success" type="submit">Search</button>
+            </form> -->
+          </div>
+        </div>
+    </nav>
+
+    <div class="d-flex align-items-center gap-2 d-none" id="load_image">
         <input class="btn btn-primary" type="file" id="file_input" name="file_input" accept="image/*">
     </div>
 
@@ -41,7 +76,7 @@
 
     <!-- <button id="newrow">Create New Row</button> -->
    
-    <div class="save_load_container">
+    <div class="save_load_container d-none">
         <div class="save_load_child p-2" id="file_load">
             <label for="jsonFileInput">Load Saved File: </label>
             <input type="file" id="jsonFileInput" name="jsonFileInput" accept=".geojson, .json, text/plain" />
