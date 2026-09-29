@@ -1,6 +1,5 @@
 import Konva from "konva";
-import { setNameCounter, scaleFactor, addCheckbox } from './index.js';
-// import { clean } from "gh-pages";
+import { setNameCounter, scaleFactor, addCheckbox, setImageNameInSaveFile } from './index.js';
 
 function formatName () {
   const userFilename = document.getElementById('nameTextInput').value;
@@ -126,8 +125,6 @@ function downloadGeoJSON(geoJsonObject, filename = "data.geojson") {
   const dataBlob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
 
   const downloadAnchor = document.createElement('a');
-  // downloadAnchor.setAttribute("href", dataStr);
-  // downloadAnchor.setAttribute("download", filename);
   downloadAnchor.href = URL.createObjectURL(dataBlob);
   downloadAnchor.download = filename;
 
@@ -156,11 +153,9 @@ export function writeWorldFile (sentImageFilename)
 {
   const worldfileName = sentImageFilename + "w";
 
-  // const xPixelMapUnits = 0.5;
   const xPixelMapUnits = 1.0;
   const yImgRotation = 0.0;
   const xImgRotation = 0.0;
-  // const yPixelMapUnits = -0.5;
   const yPixelMapUnits = -1.0;
 
   const worldfileContents = xPixelMapUnits.toString() + "\n" + yImgRotation.toString() + "\n" + xImgRotation.toString() + "\n" + yPixelMapUnits.toString() + "\n" + xImgCoord.toString() + "\n" + yImgCoord.toString();
@@ -169,8 +164,6 @@ export function writeWorldFile (sentImageFilename)
   const dataBlob = new Blob([dataStr], { type: 'text/plain;charset=utf-8' });
   
   const downloadAnchor = document.createElement('a');
-  // downloadAnchor.setAttribute("href", dataStr);
-  // downloadAnchor.setAttribute("download", worldfileName);
   downloadAnchor.href = URL.createObjectURL(dataBlob);
   downloadAnchor.download = worldfileName;
 
@@ -185,6 +178,10 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
 {
   let lineCounter = 0;
   const groupArray = sentJSON.features;
+  if (groupArray.length > 0)
+  {
+    setImageNameInSaveFile(groupArray[0].properties.image_name);
+  }
   for (const group of groupArray)
   {
     // console.log(group);
@@ -192,16 +189,11 @@ export function loadSavedJSON (sentJSON, sentLayer, sentTable)
       id: group.properties.petro_no,
       name: "Group"
     });
-    // let lineCounter = 0;
     for (const coordArray of group.geometry.coordinates)
     {
       const tempCoords = [];
       for (const coordPair of coordArray)
       {
-        // tempCoords.push(coordPair[1]);
-        // tempCoords.push(coordPair[0]);
-        // tempCoords.push(coordPair[0]);
-        // tempCoords.push(coordPair[1]);
         tempCoords.push(coordPair[0] * scaleFactor);
         tempCoords.push((coordPair[1] * scaleFactor) * -1.0);
       }

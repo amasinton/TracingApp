@@ -65,6 +65,26 @@
             </div>
         </div>
     </div>
+
+    <div class="modal" id="appModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="appModalTitle">Tracing Question</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="modal-body" id="appModalBody">
+            <p>Modal body text goes here.</p>
+          </div>
+          <div class="modal-footer" id="appModalFooter">
+            <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <div id="lineinfo"></div>
 
@@ -78,22 +98,18 @@
    
     <div class="save_load_container d-none">
         <div class="save_load_child p-2" id="file_load">
-            <label for="jsonFileInput">Load Saved File: </label>
             <input type="file" id="jsonFileInput" name="jsonFileInput" accept=".geojson, .json, text/plain" />
         </div>
         
         <div class="save_load_child p-2" id="save_file">
-            <label for="reportchildren">Save File: </label>
             <button id="reportchildren" name="reportchildren">Save</button>
         </div>
 
         <div class="save_load_child p-2" id="save_csv">
-            <label for="reportcsv">Export .csv: </label>
             <button id="reportcsv" name="reportcsv">Export</button>
         </div>
 
         <div class="save_load_child p-2" id="save_worldfile">
-            <label for="reportworldfile">Write World File: </label>
             <button id="reportworldfile" name="reportworldfile">Write</button>
         </div>
     </div>

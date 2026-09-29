@@ -1,6 +1,6 @@
 import "bootswatch/dist/darkly/bootstrap.min.css";
 import './style.css';
-import 'bootstrap';
+import { Modal } from 'bootstrap'; 
 import Konva from 'konva';
 import {TabulatorFull as Tabulator} from 'tabulator-tables';
 import "tabulator-tables/dist/css/tabulator_bootstrap5.min.css";
@@ -57,6 +57,11 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 	const file = e.target.files[0];
 	if (!file) return;
 
+	if (saveFileLoaded)
+	{
+		loadImageScaleLines(true);
+	}
+
 	scaleFactor = 1.0;
 
 	// 1. Convert the file object into a usable local URL object
@@ -98,6 +103,8 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 		userUploadedImage.moveToBottom();
 		layer.batchDraw();
 		prepWorldFile(userUploadedImage);
+
+		loadImageCheckFile();
 		
 		// 4. Free up memory by revoking the object URL
 		setTimeout(() => URL.revokeObjectURL(localFileUrl), 10000);
@@ -139,6 +146,10 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 			imageLoadDiv.appendChild(slider);
 
 			bgImageLoaded = true;
+			if (saveFileLoaded)
+			{
+				nameTextInput.value = loadFileNameHolder;
+			}
 		}
 		document.getElementById("contrast_slider").value = userUploadedImage.contrast();
 	};
@@ -1124,11 +1135,20 @@ document.getElementById("export_worldfile_item").addEventListener('click', funct
 // ** Save prep
 document.getElementById("save_file_item").addEventListener('click', function (e) {
 	e.preventDefault();
-	saveLoadReportLayerChildren(layer, table);
+	saveCheckFileName();
+	// saveLoadReportLayerChildren(layer, table);
 });
 
 
 // ** Load
+let saveFileLoaded = false;
+let imageNameInSaveFile = "";
+export const getImageNameInSaveFile = () => imageNameInSaveFile;
+export const setImageNameInSaveFile = (sentName) => {
+    imageNameInSaveFile = sentName;
+};
+let loadFileNameHolder = "";
+
 document.getElementById("save_upload_item").addEventListener('click', function (e) {
 	e.preventDefault();
 	document.getElementById("jsonFileInput").click();
@@ -1136,40 +1156,136 @@ document.getElementById("save_upload_item").addEventListener('click', function (
 const fileInput = document.getElementById('jsonFileInput');
 
 fileInput.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  
-  if (!file) {
-    return;
-  }
+	const file = event.target.files[0];
+	
+	if (!file) {
+		return;
+	}
 
+	const rawName = file.name;
+	const strippedName = rawName.split('.')[0];
+	loadFileNameHolder = strippedName;
 	const nameTextInput = document.getElementById('nameTextInput');
 	if (nameTextInput)
 	{
-		const rawName = file.name;
-		const strippedName = rawName.split('.')[0];
 		nameTextInput.value = strippedName;
 	}
 
-  const reader = new FileReader();
+	const reader = new FileReader();
 
-  // This bit comes from google AI
-  // Triggered when the file finishes reading
-  reader.onload = (e) => {
-    try {
-      const fileContent = e.target.result; // String contents of the file
-      const parsedObject = JSON.parse(fileContent); // Parse JSON text
-      
-    //   console.log('Parsed JSON Object:', parsedObject);
-      // Do something with your parsed object here (e.g., update state or UI)
-	  loadSavedJSON(parsedObject, layer, table);
-    } catch (error) {
-      console.error('Invalid JSON file format:', error);
-    }
-  };
+	// This bit comes from google AI
+	// Triggered when the file finishes reading
+	reader.onload = (e) => {
+		try {
+			const fileContent = e.target.result; // String contents of the file
+			const parsedObject = JSON.parse(fileContent); // Parse JSON text
+			
+			loadSavedJSON(parsedObject, layer, table);
 
-//   // Read the uploaded file as text
-  reader.readAsText(file);
+			saveFileLoaded = true;
+			loadFileCheckImage();
+		} 
+		catch (error) {
+			console.error('Invalid JSON file format:', error);
+		}
+	};
+
+	// Read the uploaded file as text
+	reader.readAsText(file);
 });
+
+
+// ** Checking app state when loading and saving images and files
+const appModalDiv = document.getElementById("appModal");
+const appModal = new Modal(appModalDiv);
+// const appModal = bootstrap.Modal.getInstance(appModalDiv);
+const appModalTitle = appModalDiv.querySelector("#appModalTitle");
+const appModalBody = appModalDiv.querySelector("#appModalBody");
+// const appModalFooter = appModalDiv.querySelector("#appModalFooter");
+
+function saveCheckFileName ()
+{
+	const scrubbedFilenameText = nameTextInput.value.replace(/\s+/g, '');
+	if (scrubbedFilenameText == "")
+	{
+		//Show modal warning there is no file name
+		appModalTitle.textContent = "Missing File Name";
+		appModalBody.textContent = "Give this tracing project a name before saving it."
+		appModal.show();
+	}
+	else
+	{
+		saveLoadReportLayerChildren(layer, table);
+	}
+}
+
+function loadImageCheckFile ()
+{
+	if (saveFileLoaded)
+	{
+		if (backgroundImagePath == imageNameInSaveFile)
+		{
+			//Scale the existing geometry to match the scaleFactor of the newly-uploaded image
+			loadImageScaleLines(false);
+		}
+		else
+		{
+			//Show modal saying the loaded image file name does not match the name of the image in the loaded geojson file
+			appModalTitle.textContent = "Image Mismatch";
+			appModalBody.textContent = "The image associated with this tracing and the image currently loaded in this project do not match."
+			appModal.show();
+		}
+	}
+}
+
+function loadFileCheckImage ()
+{
+	if (bgImageLoaded)
+	{
+		if (backgroundImagePath != imageNameInSaveFile)
+		{
+			//Show modal saying the loaded image file name does not match the name of the image in the loaded geojson file
+			appModalTitle.textContent = "Image Mismatch";
+			appModalBody.textContent = "The image associated with this tracing and the image currently loaded in this project do not match."
+			appModal.show();
+		}
+	}
+	else if (!bgImageLoaded)
+	{
+		lineInfo.innerHTML = "Name of image in loaded tracing: " + imageNameInSaveFile;
+		//Show modal saying "You should load the image named in the loaded save file."
+		appModalTitle.textContent = "Missing Image";
+		appModalBody.textContent = "Load the image associated with this tracing.  Its name is: " + imageNameInSaveFile + ".";
+		appModal.show();
+	}
+
+}
+
+function loadImageScaleLines (shouldDivide)
+{
+	//Find all of the Line nodes, scale their points arrays by the newly-loaded image scaleFactor
+	const allLines = stage.find(".line");
+	if (allLines.length > 0)
+	{
+		for (let i = 0; i < allLines.length; i++) {
+			let tempPoints = [];
+			for (let j = 0; j < allLines[i].points().length; j++) {
+				let tempCoord = 0.0;
+				if (shouldDivide)
+				{
+					tempCoord = allLines[i].points()[j] / scaleFactor;
+				}
+				else
+				{
+					tempCoord = allLines[i].points()[j] * scaleFactor;
+				}
+				tempPoints.push(tempCoord);
+			}
+			allLines[i].points(tempPoints);
+		}
+	}
+	layer.batchDraw();
+}
 
 
 
