@@ -25,3 +25,22 @@ canvas:focus-visible {
 .save_load_child {
   display: inline-block;
 }
+
+/* Adapted from google AI */
+.custom-toggle {
+  height: 18px;
+  align-items: center;
+  background-color: transparent;
+  transition: all 0.3s ease-in-out;
+}
+
+.custom-toggle:hover {
+  background-color: #007bff !important;
+  color: #000 !important; /* Text color on hover */
+}
+
+.btn-check:checked + .custom-toggle:hover,
+.custom-toggle.active:hover {
+  background-color: #0056b3 !important;
+  color: #fff !important;
+}

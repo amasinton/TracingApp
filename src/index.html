@@ -55,7 +55,9 @@
         </div>
 
         <div class="layers_column col-md-6 d-flex flex-column row-gap-2" style="max-height: 65vh">
-            <div class="border border-1 rounded p-2 min-h-0 overflow-y-auto" id="groupsVis" style="height: 75%;">Glyphs</div>
+            <div class="border border-1 rounded p-2 min-h-0 overflow-y-auto" id="groupsVis" style="height: 75%;">
+              Glyphs
+            </div>
             <div class="border border-1 rounded p-2" id="selectionControls" style="height: 25%;">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="selectionModeToggle">
@@ -88,10 +90,10 @@
     
     <div id="lineinfo"></div>
 
-    <div id="grouping">
-        <button type="button" class="btn btn-primary" id="groupbutton" hidden>Create Glyph</button>
-        <input type="text" id="groupidinput" placeholder="Group ID" hidden>
-        <button type="button" class="btn btn-success" id="submitgroupid" hidden>Submit Glyph</button>
+    <div class="align-items-center" id="grouping">
+        <button type="button" class="btn btn-primary m-1" id="groupbutton" hidden>Create Glyph</button>
+        <input type="text" class="m-1" id="groupidinput" placeholder="Group ID" hidden>
+        <button type="button" class="btn btn-success m-1" id="submitgroupid" hidden>Submit Glyph</button>
     </div>
 
     <!-- <button id="newrow">Create New Row</button> -->

@@ -500,7 +500,7 @@ function cleanupEmptyGroups (sentUndoRedoObj)
 			const emptyGroupID = group.id();
 			group.destroy();
 			layer.batchDraw();
-			const tempCheckbox = document.getElementById(emptyGroupID);
+			const tempCheckbox = document.getElementById("cb-" + emptyGroupID);
 			if (tempCheckbox)
 			{
 				tempCheckbox.remove();
@@ -524,34 +524,62 @@ function cleanupEmptyGroups (sentUndoRedoObj)
 	}
 }
 
-export function addCheckbox(labelText, value) {
+export function addCheckbox (labelText, value)
+{
 	const container = document.getElementById('groupsVis');
-  
-	const label = document.createElement('label');
-	label.id = value;
-	label.style.display = 'block';
-  
-	const checkbox = document.createElement('input');
-	checkbox.type = 'checkbox';
-	checkbox.value = value;
-	checkbox.name = 'group-checkbox';
-	checkbox.defaultChecked = true;
-	checkbox.addEventListener('change', function () {
+
+	const checkbuttonDiv = document.createElement('div');
+	checkbuttonDiv.classList.add("checkbuttoncontainer", "d-flex", "align-items-center");
+	checkbuttonDiv.id = "cb-" + value;
+
+	const checkbuttonCheck = document.createElement('input');
+	checkbuttonCheck.type = 'checkbox';
+	checkbuttonCheck.value = value;
+	checkbuttonCheck.name = 'group-checkbox';
+	checkbuttonCheck.defaultChecked = true;
+	checkbuttonCheck.classList.add("form-check-input", "m-1");
+	checkbuttonCheck.addEventListener('change', function () {
 		if (this.checked) 
 		{
-			toggleGroupVisibility (checkbox.value, true);
+			toggleGroupVisibility (checkbuttonCheck.value, true);
 		}
 		else
 		{
-			toggleGroupVisibility (checkbox.value, false);
+			toggleGroupVisibility (checkbuttonCheck.value, false);
 		}
 	});
-  
-	label.appendChild(checkbox);
-	label.appendChild(document.createTextNode(' ' + labelText));
-  
-	container.appendChild(label);
-} 
+
+	const checkbuttonButton = document.createElement('input');
+	checkbuttonButton.type = 'checkbox';
+	checkbuttonButton.value = value;
+	checkbuttonButton.name = 'glyph-select';
+	checkbuttonButton.id = value;
+	checkbuttonButton.defaultChecked = false;
+	checkbuttonButton.classList.add("btn-check");
+	checkbuttonButton.addEventListener('change', function () {
+		console.log("Layer Label clicked: " + checkbuttonButton.value);
+		if (this.checked) 
+		{
+			selectGroup (checkbuttonButton.value, true);
+		}
+		else
+		{
+			selectGroup (checkbuttonButton.value, false);
+		}
+	});
+
+	const checkbuttonButtonLabel = document.createElement('label');
+	checkbuttonButtonLabel.classList.add("btn", "m-1", "d-inline-flex", "flex-grow-1", "text-start", "custom-toggle");
+	checkbuttonButtonLabel.htmlFor = value;
+	checkbuttonButtonLabel.id = value;
+	checkbuttonButtonLabel.textContent = labelText;
+
+	checkbuttonDiv.appendChild(checkbuttonCheck);
+	checkbuttonDiv.appendChild(checkbuttonButton);
+	checkbuttonDiv.appendChild(checkbuttonButtonLabel);
+
+	container.appendChild(checkbuttonDiv);
+}
 
 function toggleGroupVisibility (sentID, sentState)
 {
@@ -566,6 +594,36 @@ function toggleGroupVisibility (sentID, sentState)
 		else
 		{
 			tempGroup.hide();
+			layer.batchDraw();
+		}
+	}
+}
+
+const selectedGlyphColor = "#00b38f";
+function selectGroup (sentID, sentState)
+{
+	const tempGroup = stage.findOne('#' + sentID);
+	if (tempGroup)
+	{
+		const groupLines = tempGroup.find("Line");
+		if (sentState == true)
+		{
+			if (groupLines.length > 0)
+			{
+				for (let i = 0; i < groupLines.length; i++) {
+					groupLines[i].stroke(selectedGlyphColor);
+				}
+			}
+			layer.batchDraw();
+		}
+		else
+		{
+			if (groupLines.length > 0)
+			{
+				for (let i = 0; i < groupLines.length; i++) {
+					groupLines[i].stroke(groupLines[i].getAttr("originalColor"));
+				}
+			}
 			layer.batchDraw();
 		}
 	}
