@@ -112,11 +112,30 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 		zoomToImage(userUploadedImage);
 
 		userUploadedImage.cache();
-		userUploadedImage.filters([Konva.Filters.Contrast]);
+		userUploadedImage.filters([Konva.Filters.Brightness, Konva.Filters.Contrast]);
+		userUploadedImage.brightness(1.0);
 		userUploadedImage.contrast(0);
 
 		if (!bgImageLoaded)
-		{			
+		{	
+			const sliderBLabel = document.createElement('label');
+			sliderBLabel.classList.add("ms-3", "me-3");
+			sliderBLabel.htmlFor = 'brightness_slider';
+			sliderBLabel.textContent = 'Brightness: ';
+
+			const sliderB = document.createElement('input');
+			sliderB.type = 'range';
+			sliderB.min = '0';
+			sliderB.max = '2';
+			sliderB.value = userUploadedImage.brightness();
+			sliderB.step = '0.1';
+			sliderB.id = 'brightness_slider';
+
+			sliderB.addEventListener('input', (e) => {
+				const value = parseFloat(e.target.value);
+				userUploadedImage.brightness(value);
+			});
+			
 			const sliderLabel = document.createElement('label');
 			sliderLabel.classList.add("ms-3", "me-3");
 			sliderLabel.htmlFor = 'contrast_slider';
@@ -142,6 +161,8 @@ document.getElementById('file_input').addEventListener('change', function (e) {
 
 			const imageLoadDiv = document.getElementById("navbarColor01");
 			imageLoadDiv.appendChild(nameTextInput);
+			imageLoadDiv.appendChild(sliderBLabel);
+			imageLoadDiv.appendChild(sliderB);
 			imageLoadDiv.appendChild(sliderLabel);
 			imageLoadDiv.appendChild(slider);
 
@@ -959,7 +980,10 @@ stage.on('mouseup touchend', () => {
 		for (let i = 0; i < shapes.length; i++) {
 			if (Konva.Util.haveIntersection(box, shapes[i].getClientRect()))
 			{
-				newSelected.push(shapes[i]);
+				if (shapes[i].isVisible())
+				{
+					newSelected.push(shapes[i]);
+				}
 			}
 		}
 		const tempNodes = tr.nodes();
@@ -984,19 +1008,19 @@ stage.on('mouseup touchend', () => {
 			if (isInGroup) {
 				lineInfo.innerHTML = newSelected[0].name() + " is part of Glyph: " + newSelected[0].getParent().id();
 				deleteSelectionButton.hidden = false;
-				groupButton.textContent = "Move to OR Create Glyph";
+				groupButton.textContent = "Create OR Move to Glyph";
 				groupButton.hidden = false;
 				groupIDInput.hidden = true;
-				groupIDSubmit.textContent = "Transfer/Create";
+				groupIDSubmit.textContent = "Create/Transfer";
 				groupIDSubmit.hidden = true;
 			}
 			else {
 				lineInfo.innerHTML = newSelected[0].name() + " is not part of a Glyph.";
 				deleteSelectionButton.hidden = false;
-				groupButton.textContent = "Add to OR Create Glyph";
+				groupButton.textContent = "Create OR Add to Glyph";
 				groupButton.hidden = false;
 				groupIDInput.hidden = true;
-				groupIDSubmit.textContent = "Add/Create";
+				groupIDSubmit.textContent = "Create/Add";
 				groupIDSubmit.hidden = true;
 			}
 		}
@@ -1004,10 +1028,10 @@ stage.on('mouseup touchend', () => {
 		{
 			lineInfo.innerHTML = "Multiple lines selected.";
 			deleteSelectionButton.hidden = false;
-			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.textContent = "Create OR Move to Glyph";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
-			groupIDSubmit.textContent = "Transfer/Create";
+			groupIDSubmit.textContent = "Create/Transfer";
 		}
 	}
 });
@@ -1048,19 +1072,19 @@ stage.on('click tap', function (e) {
 		if (isInGroup) {
 			lineInfo.innerHTML = e.target.name() + " is part of Glyph: " + e.target.getParent().id();
 			deleteSelectionButton.hidden = false;
-			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.textContent = "Create OR Move to Glyph";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
-			groupIDSubmit.textContent = "Transfer/Create";
+			groupIDSubmit.textContent = "Create/Transfer";
 			groupIDSubmit.hidden = true;
 		}
 		else {
 			lineInfo.innerHTML = e.target.name() + " is not part of a Glyph.";
 			deleteSelectionButton.hidden = false;
-			groupButton.textContent = "Add to OR Create Glyph";
+			groupButton.textContent = "Create OR Add to Glyph";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
-			groupIDSubmit.textContent = "Add/Create";
+			groupIDSubmit.textContent = "Create/Add";
 			groupIDSubmit.hidden = true;
 		}
 	}
@@ -1098,19 +1122,19 @@ stage.on('click tap', function (e) {
 			if (isInGroup) {
 				lineInfo.innerHTML = tempObj[0].name() + " is part of Glyph: " + tempObj[0].getParent().id();
 				deleteSelectionButton.hidden = false;
-				groupButton.textContent = "Move to OR Create Glyph";
+				groupButton.textContent = "Create OR Move to Glyph";
 				groupButton.hidden = false;
 				groupIDInput.hidden = true;
-				groupIDSubmit.textContent = "Transfer/Create";
+				groupIDSubmit.textContent = "Create/Transfer";
 				groupIDSubmit.hidden = true;
 			}
 			else {
 				lineInfo.innerHTML = tempObj[0].name() + " is not part of a Glyph.";
 				deleteSelectionButton.hidden = false;
-				groupButton.textContent = "Add to OR Create Glyph";
+				groupButton.textContent = "Create OR Add to Glyph";
 				groupButton.hidden = false;
 				groupIDInput.hidden = true;
-				groupIDSubmit.textContent = "Add/Create";
+				groupIDSubmit.textContent = "Create/Add";
 				groupIDSubmit.hidden = true;
 			}
 		}
@@ -1118,10 +1142,10 @@ stage.on('click tap', function (e) {
 		{
 			lineInfo.innerHTML = "Multiple lines selected.";
 			deleteSelectionButton.hidden = false;
-			groupButton.textContent = "Move to OR Create Glyph";
+			groupButton.textContent = "Create OR Move to Glyph";
 			groupButton.hidden = false;
 			groupIDInput.hidden = true;
-			groupIDSubmit.textContent = "Transfer/Create";
+			groupIDSubmit.textContent = "Create/Transfer";
 		}
 	} else if (metaPressed && !isSelected) {
 		// add the node into selection
@@ -1129,10 +1153,10 @@ stage.on('click tap', function (e) {
 		tr.nodes(nodes);
 		lineInfo.innerHTML = "Multiple lines selected.";
 		deleteSelectionButton.hidden = false;
-		groupButton.textContent = "Move to OR Create Glyph";
+		groupButton.textContent = "Create OR Move to Glyph";
 		groupButton.hidden = false;
 		groupIDInput.hidden = true;
-		groupIDSubmit.textContent = "Transfer/Create";
+		groupIDSubmit.textContent = "Create/Transfer";
 	}
 	const tempNodes = tr.nodes();
 	tempNodes.forEach(line => {
