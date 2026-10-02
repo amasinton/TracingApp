@@ -578,7 +578,6 @@ export function addCheckbox (labelText, value)
 	checkbuttonButton.defaultChecked = false;
 	checkbuttonButton.classList.add("btn-check");
 	checkbuttonButton.addEventListener('change', function () {
-		console.log("Layer Label clicked: " + checkbuttonButton.value);
 		if (this.checked) 
 		{
 			selectGroup (checkbuttonButton.value, true);
@@ -838,20 +837,6 @@ function undoDeleteLine (sentCommand)
 
 function cleanupUndoRedoStacks ()
 {
-	if (undoStack.length > 0)
-	{
-		// console.log("undoStack.length = " + undoStack.length.toString());
-		undoStack.forEach(element => {
-			if (element.command == "drawLine")
-			{
-				// console.log("undoStack - command: " + element.command + " lineName: " + element.lineName[0]);
-			}
-			else if (element.command == "deleteLine")
-			{
-				// console.log("undoStack - command: " + element.command);
-			}
-		});
-	}
 	if (undoStack.length > undoRedoMax)
 	{
 		const numberToRemove = undoStack.length - undoRedoMax;
@@ -921,117 +906,138 @@ let selectionRectangle = new Konva.Rect({
 layer.add(selectionRectangle);
 
 let x1, y1, x2, y2;
-stage.on('mousedown touchstart', (e) => {
+stage.on('mousedown touchstart', function (e) {
 	if (selectionModeActive)
 	{
-		// do nothing if we mousedown on any shape
-		if (e.target !== stage) {
-			return;
+		if (e.evt.button === 2)
+		{
+			stage.draggable(true);
 		}
-		x1 = stage.getRelativePointerPosition().x;
-		y1 = stage.getRelativePointerPosition().y;
-		x2 = stage.getRelativePointerPosition().x;
-		y2 = stage.getRelativePointerPosition().y;
+		else if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			// do nothing if we mousedown on any shape
+			if (e.target !== stage) {
+				return;
+			}
+			x1 = stage.getRelativePointerPosition().x;
+			y1 = stage.getRelativePointerPosition().y;
+			x2 = stage.getRelativePointerPosition().x;
+			y2 = stage.getRelativePointerPosition().y;
 
-		selectionRectangle.setAttrs({
-			x: x1,
-			y: y1,
-			width: 0,
-			height: 0,
-			visible: true,
-		});
+			selectionRectangle.setAttrs({
+				x: x1,
+				y: y1,
+				width: 0,
+				height: 0,
+				visible: true,
+			});
+		}
 	}
 });
 
-stage.on('mousemove touchmove', () => {
+stage.on('mousemove touchmove', function (e) {
 	if (selectionModeActive)
 	{
-		// do nothing if we didn't start selection
-		if (!selectionRectangle.visible()) {
+		if (e.evt.button === 2)
+		{
 			return;
 		}
-		x2 = stage.getRelativePointerPosition().x;
-		y2 = stage.getRelativePointerPosition().y;
+		else if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			// do nothing if we didn't start selection
+			if (!selectionRectangle.visible()) {
+				return;
+			}
+			x2 = stage.getRelativePointerPosition().x;
+			y2 = stage.getRelativePointerPosition().y;
 
-		selectionRectangle.setAttrs({
-			x: Math.min(x1, x2),
-			y: Math.min(y1, y2),
-			width: Math.abs(x2 - x1),
-			height: Math.abs(y2 - y1),
-		});
+			selectionRectangle.setAttrs({
+				x: Math.min(x1, x2),
+				y: Math.min(y1, y2),
+				width: Math.abs(x2 - x1),
+				height: Math.abs(y2 - y1),
+			});
+		}
 	}
 });
 
-stage.on('mouseup touchend', () => {
+stage.on('mouseup touchend', function (e) {
 	if (selectionModeActive)
 	{
-		// do nothing if we didn't start selection
-		if (!selectionRectangle.visible()) {
-			return;
+		if (e.evt.button === 2)
+		{
+			stage.draggable(false);
 		}
-		// update visibility in timeout, so we can check it in click event
-		setTimeout(() => {
-			selectionRectangle.visible(false);
-		});
+		else if (e.evt.button === 0 || e.evt.touches.length === 1)
+		{
+			// do nothing if we didn't start selection
+			if (!selectionRectangle.visible()) {
+				return;
+			}
+			// update visibility in timeout, so we can check it in click event
+			setTimeout(() => {
+				selectionRectangle.visible(false);
+			});
 
-		var shapes = stage.find('.line');
-		var box = selectionRectangle.getClientRect();
-		var newSelected = [];
-		for (let i = 0; i < shapes.length; i++) {
-			if (Konva.Util.haveIntersection(box, shapes[i].getClientRect()))
-			{
-				if (shapes[i].isVisible())
+			var shapes = stage.find('.line');
+			var box = selectionRectangle.getClientRect();
+			var newSelected = [];
+			for (let i = 0; i < shapes.length; i++) {
+				if (Konva.Util.haveIntersection(box, shapes[i].getClientRect()))
 				{
-					newSelected.push(shapes[i]);
+					if (shapes[i].isVisible())
+					{
+						newSelected.push(shapes[i]);
+					}
 				}
 			}
-		}
-		const tempNodes = tr.nodes();
-		tempNodes.forEach(line => {
-			line.stroke(line.getAttr("originalColor"));
-		});
-		newSelected.forEach(line => {
-			line.stroke(selectionColor);
-		});
-		tr.nodes(newSelected);
-		if (newSelected.length == 0)
-		{
-			lineInfo.innerHTML = "No selection...";
-			deleteSelectionButton.hidden = true;
-			groupButton.hidden = true;
-			groupIDInput.hidden = true;
-			groupIDSubmit.hidden = true;
-		}
-		else if (newSelected.length == 1)
-		{
-			const isInGroup = newSelected[0].getParent() && newSelected[0].getParent().getClassName() === "Group";
-			if (isInGroup) {
-				lineInfo.innerHTML = newSelected[0].name() + " is part of Glyph: " + newSelected[0].getParent().id();
+			const tempNodes = tr.nodes();
+			tempNodes.forEach(line => {
+				line.stroke(line.getAttr("originalColor"));
+			});
+			newSelected.forEach(line => {
+				line.stroke(selectionColor);
+			});
+			tr.nodes(newSelected);
+			if (newSelected.length == 0)
+			{
+				lineInfo.innerHTML = "No selection...";
+				deleteSelectionButton.hidden = true;
+				groupButton.hidden = true;
+				groupIDInput.hidden = true;
+				groupIDSubmit.hidden = true;
+			}
+			else if (newSelected.length == 1)
+			{
+				const isInGroup = newSelected[0].getParent() && newSelected[0].getParent().getClassName() === "Group";
+				if (isInGroup) {
+					lineInfo.innerHTML = newSelected[0].name() + " is part of Glyph: " + newSelected[0].getParent().id();
+					deleteSelectionButton.hidden = false;
+					groupButton.textContent = "Create OR Move to Glyph";
+					groupButton.hidden = false;
+					groupIDInput.hidden = true;
+					groupIDSubmit.textContent = "Create/Transfer";
+					groupIDSubmit.hidden = true;
+				}
+				else {
+					lineInfo.innerHTML = newSelected[0].name() + " is not part of a Glyph.";
+					deleteSelectionButton.hidden = false;
+					groupButton.textContent = "Create OR Add to Glyph";
+					groupButton.hidden = false;
+					groupIDInput.hidden = true;
+					groupIDSubmit.textContent = "Create/Add";
+					groupIDSubmit.hidden = true;
+				}
+			}
+			else if (newSelected.length > 1)
+			{
+				lineInfo.innerHTML = "Multiple lines selected.";
 				deleteSelectionButton.hidden = false;
 				groupButton.textContent = "Create OR Move to Glyph";
 				groupButton.hidden = false;
 				groupIDInput.hidden = true;
 				groupIDSubmit.textContent = "Create/Transfer";
-				groupIDSubmit.hidden = true;
 			}
-			else {
-				lineInfo.innerHTML = newSelected[0].name() + " is not part of a Glyph.";
-				deleteSelectionButton.hidden = false;
-				groupButton.textContent = "Create OR Add to Glyph";
-				groupButton.hidden = false;
-				groupIDInput.hidden = true;
-				groupIDSubmit.textContent = "Create/Add";
-				groupIDSubmit.hidden = true;
-			}
-		}
-		else if (newSelected.length > 1)
-		{
-			lineInfo.innerHTML = "Multiple lines selected.";
-			deleteSelectionButton.hidden = false;
-			groupButton.textContent = "Create OR Move to Glyph";
-			groupButton.hidden = false;
-			groupIDInput.hidden = true;
-			groupIDSubmit.textContent = "Create/Transfer";
 		}
 	}
 });
@@ -1101,7 +1107,6 @@ stage.on('click tap', function (e) {
 			line.stroke(line.getAttr("originalColor"));
 		});
 		tr.nodes([e.target]);
-		// console.log("Direct select: tr.nodes.length = " + tr.nodeType.length);
 	} else if (metaPressed && isSelected) {
 		// if we pressed keys and node was selected
 		// we need to remove it from selection:
